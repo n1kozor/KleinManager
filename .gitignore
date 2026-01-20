@@ -4,3 +4,8 @@
 dist
 .venv
 .idea
+__pycache__/
+*.pyc
+*.db
+images/
+.pytest_cache/
