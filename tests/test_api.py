@@ -49,3 +49,6 @@ def test_get_stats(client):
     # Should be empty initially
     assert data["total"] == 0
     assert data["value"] == "0.00"
+    # New fields
+    assert "high_value_orders" in data
+    assert "monthly_spending" in data

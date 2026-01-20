@@ -1,122 +1,145 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KleinManager - Professional Order Management</title>
+    <title>KleinManager</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#111827',
+                            card: '#1f2937',
+                            border: '#374151'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body class="bg-gray-900">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-200">
     <div id="app">
         <!-- Mobile Menu Button -->
         <div class="lg:hidden fixed top-4 left-4 z-50">
-            <button onclick="app.toggleMobileMenu()" class="p-2 bg-gray-800 rounded-lg border border-gray-700">
-                <i class="fas fa-bars text-white"></i>
+            <button onclick="app.toggleMobileMenu()" class="p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                <i class="fas fa-bars text-gray-600 dark:text-white"></i>
             </button>
         </div>
 
         <!-- Notifications Modal -->
-        <div id="notificationsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-            <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md max-h-96 overflow-hidden">
-                <div class="p-4 border-b border-gray-700">
+        <div id="notificationsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md max-h-96 overflow-hidden flex flex-col">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                     <div class="flex justify-between items-center">
-                        <h3 class="font-semibold text-white text-lg">
+                        <h3 class="font-semibold text-lg flex items-center">
                             <i class="fas fa-bell mr-2 text-blue-500"></i>
-                            Notifications
+                            <span data-i18n="notifications.title">Notifications</span>
                         </h3>
                         <div class="flex items-center gap-3">
-                            <button onclick="app.clearAllNotifications()" class="text-xs text-gray-400 hover:text-white transition-colors">
+                            <button onclick="app.clearAllNotifications()" class="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-white transition-colors" data-i18n="notifications.clearAll">
                                 Clear All
                             </button>
-                            <button onclick="app.closeNotifications()" class="text-gray-400 hover:text-white transition-colors">
+                            <button onclick="app.closeNotifications()" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
                     </div>
                 </div>
-                <div id="notificationsList" class="max-h-80 overflow-y-auto">
-                    <div class="p-6 text-center text-gray-400">
-                        <i class="fas fa-bell-slash text-3xl mb-3 text-gray-500"></i>
-                        <p>No new notifications</p>
+                <div id="notificationsList" class="flex-1 overflow-y-auto p-4">
+                    <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+                        <i class="fas fa-bell-slash text-3xl mb-3 text-gray-400 dark:text-gray-600"></i>
+                        <p data-i18n="notifications.empty">No new notifications</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Sidebar -->
-        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-800 shadow-lg border-r border-gray-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40">
-            <div class="flex items-center justify-between h-16 px-6 border-b border-gray-700">
-                <h1 class="text-xl font-bold text-white">
-                    <i class="fas fa-box-open mr-2 text-blue-500"></i>KleinManager
+        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-xl border-r border-gray-200 dark:border-gray-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40 flex flex-col">
+            <div class="flex items-center justify-between h-16 px-6 border-b border-gray-200 dark:border-gray-700">
+                <h1 class="text-xl font-bold flex items-center">
+                    <i class="fas fa-box-open mr-2 text-blue-600 dark:text-blue-500"></i>
+                    <span data-i18n="app.title">KleinManager</span>
                 </h1>
-                <button onclick="app.toggleMobileMenu()" class="lg:hidden p-2 hover:bg-gray-700 rounded">
-                    <i class="fas fa-times text-gray-400"></i>
+                <button onclick="app.toggleMobileMenu()" class="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <i class="fas fa-times text-gray-500 dark:text-gray-400"></i>
                 </button>
             </div>
 
-            <nav class="flex-1 px-4 py-6">
-                <div class="space-y-2">
-                    <button onclick="app.showSection('dashboard')"
-                            class="nav-item active w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-chart-line mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.dashboard">Dashboard</span>
-                    </button>
+            <nav class="flex-1 px-4 py-6 overflow-y-auto space-y-1">
+                <button onclick="app.showSection('dashboard')"
+                        class="nav-item active w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white transition-all duration-200 group">
+                    <i class="fas fa-chart-line mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                    <span data-i18n="nav.dashboard">Dashboard</span>
+                </button>
 
-                    <button onclick="app.showSection('orders')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-shopping-bag mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.orders">Orders</span>
-                    </button>
+                <button onclick="app.showSection('orders')"
+                        class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white transition-all duration-200 group">
+                    <i class="fas fa-shopping-bag mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                    <span data-i18n="nav.orders">Orders</span>
+                </button>
 
-                    <button onclick="app.showSection('watcher')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-eye mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.watcher">Price Watcher</span>
-                    </button>
+                <button onclick="app.showSection('watcher')"
+                        class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white transition-all duration-200 group">
+                    <i class="fas fa-eye mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                    <span data-i18n="nav.watcher">Price Watcher</span>
+                </button>
 
-                    <button onclick="app.showSection('tracking')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-truck mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.tracking">Tracking</span>
-                    </button>
+                <button onclick="app.showSection('tracking')"
+                        class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white transition-all duration-200 group">
+                    <i class="fas fa-truck mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                    <span data-i18n="nav.tracking">Tracking</span>
+                </button>
 
-                    <button onclick="app.showSection('statistics')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-chart-bar mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.statistics">Statistics</span>
-                    </button>
+                <button onclick="app.showSection('statistics')"
+                        class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white transition-all duration-200 group">
+                    <i class="fas fa-chart-bar mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                    <span data-i18n="nav.statistics">Statistics</span>
+                </button>
 
-                    <button onclick="app.showSection('settings')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-cog mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.settings">Settings</span>
-                    </button>
-                </div>
+                <button onclick="app.showSection('settings')"
+                        class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-white transition-all duration-200 group">
+                    <i class="fas fa-cog mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                    <span data-i18n="nav.settings">Settings</span>
+                </button>
             </nav>
 
             <!-- Sidebar Footer -->
-            <div class="p-4 border-t border-gray-700 space-y-3">
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 space-y-3 bg-gray-50 dark:bg-gray-800/50">
                 <!-- Notification Button -->
-                <button onclick="app.toggleNotifications()" class="relative w-full px-4 py-3 bg-gradient-to-r from-orange-600 to-red-600 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-200 shadow-lg group">
-                    <div class="flex items-center justify-center text-white">
-                        <i class="fas fa-bell text-lg mr-3"></i>
-                        <span class="font-semibold">Notifications</span>
+                <button onclick="app.toggleNotifications()" class="relative w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-200 shadow-lg group text-white">
+                    <div class="flex items-center justify-center">
+                        <i class="fas fa-bell text-lg mr-3 group-hover:animate-swing"></i>
+                        <span class="font-semibold" data-i18n="notifications.title">Notifications</span>
                     </div>
-                    <span id="notificationBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center hidden animate-pulse">0</span>
+                    <span id="notificationBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center hidden animate-pulse border-2 border-white dark:border-gray-800">0</span>
                 </button>
 
-                <!-- Language Toggle -->
-                <button onclick="app.toggleLanguage()" class="w-full px-4 py-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors duration-200">
-                    <div class="flex items-center justify-center">
-                        <i class="fas fa-language mr-3 text-gray-300"></i>
-                        <span class="text-sm font-medium text-gray-300">
-                            Language: <span id="currentLang" class="font-bold text-white">EN</span>
-                        </span>
-                    </div>
-                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <!-- Language Toggle -->
+                    <button onclick="app.toggleLanguage()" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200 text-gray-700 dark:text-gray-200">
+                        <div class="flex items-center justify-center">
+                            <i class="fas fa-globe mr-2 text-blue-500"></i>
+                            <span id="currentLang" class="font-bold text-sm">EN</span>
+                        </div>
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button onclick="app.toggleTheme()" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200 text-gray-700 dark:text-gray-200">
+                        <div class="flex items-center justify-center">
+                            <i class="fas fa-moon dark:hidden text-indigo-500"></i>
+                            <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
+                        </div>
+                    </button>
+                </div>
 
                 <!-- Update All Button -->
                 <button onclick="app.updateAllTracking()"
@@ -130,260 +153,270 @@
         </div>
 
         <!-- Main Content -->
-        <div class="lg:ml-64 flex-1">
-            <div class="p-4 lg:p-6">
+        <div class="lg:ml-64 flex-1 min-h-screen transition-all duration-300">
+            <div class="p-4 lg:p-8 max-w-7xl mx-auto">
                 <!-- Dashboard Section -->
-<div id="dashboard" class="section">
-    <div class="mb-8 mt-12 lg:mt-0">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
-            <h2 class="text-3xl font-bold text-white flex items-center">
-                <i class="fas fa-chart-line mr-3 text-blue-500"></i>
-                <span data-i18n="dashboard.title">Dashboard</span>
-            </h2>
-            <div class="flex gap-3">
-                <button onclick="app.loadDashboard()" class="px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-colors">
-                    <i class="fas fa-sync-alt mr-2"></i>Refresh
-                </button>
-                <button onclick="app.showAddOrderForm(); app.showSection('orders')" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg">
-                    <i class="fas fa-plus mr-2"></i>Add Order
-                </button>
-            </div>
-        </div>
+                <div id="dashboard" class="section">
+                    <div class="mb-8 mt-12 lg:mt-0">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+                            <h2 class="text-3xl font-bold flex items-center text-gray-800 dark:text-white">
+                                <i class="fas fa-chart-line mr-3 text-blue-500"></i>
+                                <span data-i18n="dashboard.title">Dashboard</span>
+                            </h2>
+                            <div class="flex gap-3">
+                                <button onclick="app.loadDashboard()" class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm">
+                                    <i class="fas fa-sync-alt mr-2"></i>
+                                    <span data-i18n="actions.refresh">Refresh</span>
+                                </button>
+                                <button onclick="app.showAddOrderForm(); app.showSection('orders')" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-blue-500/25">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    <span data-i18n="actions.addOrder">Add Order</span>
+                                </button>
+                            </div>
+                        </div>
 
-        <!-- Enhanced Stats Cards Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6 mb-8">
-            <div class="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border border-blue-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-box text-2xl text-blue-400"></i>
+                        <!-- Enhanced Stats Cards Grid -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6 mb-8">
+                            <!-- Total Orders -->
+                            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 text-center hover:scale-105 transition-all duration-300 shadow-lg shadow-gray-200/50 dark:shadow-none">
+                                <div class="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-box text-2xl text-blue-500 dark:text-blue-400"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2" data-i18n="stats.total">Total Orders</p>
+                                <p id="stat-total" class="text-3xl font-bold text-gray-900 dark:text-white">0</p>
+                            </div>
+
+                            <!-- In Transit -->
+                            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 text-center hover:scale-105 transition-all duration-300 shadow-lg shadow-gray-200/50 dark:shadow-none">
+                                <div class="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-truck text-2xl text-orange-500 dark:text-orange-400"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2" data-i18n="stats.transit">In Transit</p>
+                                <p id="stat-transit" class="text-3xl font-bold text-gray-900 dark:text-white">0</p>
+                            </div>
+
+                            <!-- Delivered -->
+                            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 text-center hover:scale-105 transition-all duration-300 shadow-lg shadow-gray-200/50 dark:shadow-none">
+                                <div class="w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-check-circle text-2xl text-green-500 dark:text-green-400"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2" data-i18n="stats.delivered">Delivered</p>
+                                <p id="stat-delivered" class="text-3xl font-bold text-gray-900 dark:text-white">0</p>
+                            </div>
+
+                            <!-- Total Value -->
+                            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 text-center hover:scale-105 transition-all duration-300 shadow-lg shadow-gray-200/50 dark:shadow-none">
+                                <div class="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-euro-sign text-2xl text-purple-500 dark:text-purple-400"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2" data-i18n="stats.value">Total Value</p>
+                                <p id="stat-value" class="text-3xl font-bold text-gray-900 dark:text-white">€0</p>
+                            </div>
+
+                            <!-- Avg Order -->
+                            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 text-center hover:scale-105 transition-all duration-300 shadow-lg shadow-gray-200/50 dark:shadow-none">
+                                <div class="w-12 h-12 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-chart-bar text-2xl text-yellow-500 dark:text-yellow-400"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2" data-i18n="stats.avgOrder">Avg. Order</p>
+                                <p id="stat-avg-order" class="text-3xl font-bold text-gray-900 dark:text-white">€0</p>
+                            </div>
+
+                            <!-- New Sellers -->
+                            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 text-center hover:scale-105 transition-all duration-300 shadow-lg shadow-gray-200/50 dark:shadow-none">
+                                <div class="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-exclamation-triangle text-2xl text-red-500 dark:text-red-400"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2" data-i18n="stats.newSellers">New Sellers</p>
+                                <p id="stat-new-sellers" class="text-3xl font-bold text-gray-900 dark:text-white">0</p>
+                            </div>
+                        </div>
+
+                        <!-- Charts and Insights Grid -->
+                        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+                            <!-- Status Distribution -->
+                            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-800 dark:text-white">
+                                    <i class="fas fa-chart-pie mr-2 text-blue-500"></i>
+                                    <span data-i18n="stats.statusChart">Order Status</span>
+                                </h3>
+                                <div class="h-64">
+                                    <canvas id="statusChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- 30-Day Trends -->
+                            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-800 dark:text-white">
+                                    <i class="fas fa-chart-line mr-2 text-green-500"></i>
+                                    <span data-i18n="stats.trendsChart">30-Day Trends</span>
+                                </h3>
+                                <div class="h-64">
+                                    <canvas id="trendsChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Quick Insights -->
+                            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-800 dark:text-white">
+                                    <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                                    <span data-i18n="stats.insights">Quick Insights</span>
+                                </h3>
+                                <div id="quick-insights" class="h-64 overflow-y-auto space-y-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Charts Row -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+                            <!-- Price Distribution -->
+                            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-800 dark:text-white">
+                                    <i class="fas fa-tags mr-2 text-purple-500"></i>
+                                    <span data-i18n="stats.priceChart">Price Ranges</span>
+                                </h3>
+                                <div class="h-64">
+                                    <canvas id="priceChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Top Sellers -->
+                            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-800 dark:text-white">
+                                    <i class="fas fa-users mr-2 text-indigo-500"></i>
+                                    <span data-i18n="stats.sellerChart">Top Sellers</span>
+                                </h3>
+                                <div class="h-64">
+                                    <canvas id="sellerChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Monthly Overview -->
+                            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-800 dark:text-white">
+                                    <i class="fas fa-calendar-alt mr-2 text-orange-500"></i>
+                                    <span data-i18n="stats.monthlyChart">Monthly Overview</span>
+                                </h3>
+                                <div class="h-64">
+                                    <canvas id="monthlyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-800 dark:text-white">
+                                <i class="fas fa-clock mr-2 text-cyan-500"></i>
+                                <span data-i18n="stats.recent">Recent Activity</span>
+                            </h3>
+                            <div id="recent-activity" class="max-h-96 overflow-y-auto"></div>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-sm text-blue-300 mb-2">Total Orders</p>
-                <p id="stat-total" class="text-3xl font-bold text-blue-400">0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-orange-600/20 to-orange-800/20 border border-orange-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-truck text-2xl text-orange-400"></i>
-                </div>
-                <p class="text-sm text-orange-300 mb-2">In Transit</p>
-                <p id="stat-transit" class="text-3xl font-bold text-orange-400">0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-green-600/20 to-green-800/20 border border-green-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-check-circle text-2xl text-green-400"></i>
-                </div>
-                <p class="text-sm text-green-300 mb-2">Delivered</p>
-                <p id="stat-delivered" class="text-3xl font-bold text-green-400">0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border border-purple-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-euro-sign text-2xl text-purple-400"></i>
-                </div>
-                <p class="text-sm text-purple-300 mb-2">Total Value</p>
-                <p id="stat-value" class="text-3xl font-bold text-purple-400">€0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 border border-yellow-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-chart-bar text-2xl text-yellow-400"></i>
-                </div>
-                <p class="text-sm text-yellow-300 mb-2">Avg. Order</p>
-                <p id="stat-avg-order" class="text-3xl font-bold text-yellow-400">€0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-red-600/20 to-red-800/20 border border-red-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-exclamation-triangle text-2xl text-red-400"></i>
-                </div>
-                <p class="text-sm text-red-300 mb-2">New Sellers</p>
-                <p id="stat-new-sellers" class="text-3xl font-bold text-red-400">0</p>
-            </div>
-        </div>
-
-        <!-- Charts and Insights Grid -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-            <!-- Status Distribution -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-chart-pie mr-2 text-blue-500"></i>
-                    Order Status
-                </h3>
-                <div class="h-64">
-                    <canvas id="statusChart"></canvas>
-                </div>
-            </div>
-
-            <!-- 30-Day Trends -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-chart-line mr-2 text-green-500"></i>
-                    30-Day Trends
-                </h3>
-                <div class="h-64">
-                    <canvas id="trendsChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Quick Insights -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
-                    Quick Insights
-                </h3>
-                <div id="quick-insights" class="h-64 overflow-y-auto"></div>
-            </div>
-        </div>
-
-        <!-- Additional Charts Row -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-            <!-- Price Distribution -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-tags mr-2 text-purple-500"></i>
-                    Price Ranges
-                </h3>
-                <div class="h-64">
-                    <canvas id="priceChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Top Sellers -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-users mr-2 text-indigo-500"></i>
-                    Top Sellers
-                </h3>
-                <div class="h-64">
-                    <canvas id="sellerChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Monthly Overview -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-calendar-alt mr-2 text-orange-500"></i>
-                    Monthly Overview
-                </h3>
-                <div class="h-64">
-                    <canvas id="monthlyChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-            <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                <i class="fas fa-clock mr-2 text-cyan-500"></i>
-                Recent Activity
-            </h3>
-            <div id="recent-activity" class="max-h-96 overflow-y-auto"></div>
-        </div>
-    </div>
-</div>
 
                 <!-- Orders Section -->
-               <div id="orders" class="section hidden">
-    <div class="mb-6 mt-12 lg:mt-0">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-            <h2 class="text-3xl font-bold text-white flex items-center">
-                <i class="fas fa-shopping-bag mr-3 text-blue-500"></i>
-                <span data-i18n="orders.title">Orders</span>
-            </h2>
+                <div id="orders" class="section hidden">
+                    <div class="mb-6 mt-12 lg:mt-0">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                            <h2 class="text-3xl font-bold flex items-center text-gray-800 dark:text-white">
+                                <i class="fas fa-shopping-bag mr-3 text-blue-500"></i>
+                                <span data-i18n="orders.title">Orders</span>
+                            </h2>
 
-            <div class="flex flex-wrap gap-2">
-                <button onclick="app.showAddOrderForm()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg">
-                    <i class="fas fa-plus mr-2"></i>
-                    <span data-i18n="actions.addOrder">Add Order</span>
-                </button>
-                <button onclick="app.clearAllFilters()" class="px-4 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-500 transition-colors">
-                    <i class="fas fa-eraser mr-2"></i>
-                    Clear Filters
-                </button>
-                <button onclick="app.toggleView()" class="px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-colors">
-                    <i id="viewToggleIcon" class="fas fa-th mr-2"></i>
-                    View
-                </button>
-            </div>
-        </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="app.showAddOrderForm()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-blue-500/25">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    <span data-i18n="actions.addOrder">Add Order</span>
+                                </button>
+                                <button onclick="app.clearAllFilters()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                                    <i class="fas fa-eraser mr-2"></i>
+                                    Clear Filters
+                                </button>
+                                <button onclick="app.toggleView()" class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                                    <i id="viewToggleIcon" class="fas fa-th mr-2"></i>
+                                    View
+                                </button>
+                            </div>
+                        </div>
 
-        <!-- Smart Filters -->
-        <div class="bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-700 mb-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-                <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="searchInput"
-                           placeholder="Search orders..."
-                           oninput="app.loadOrders()"
-                           class="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        <!-- Smart Filters -->
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-700 mb-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                                <div class="relative">
+                                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                    <input type="text" id="searchInput"
+                                           data-i18n-placeholder="orders.searchPlaceholder"
+                                           placeholder="Search orders..."
+                                           oninput="app.loadOrders()"
+                                           class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                </div>
+
+                                <select id="statusFilter" onchange="app.loadOrders()" class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    <option value="" data-i18n="orders.allStatus">All Status</option>
+                                    <option value="Ordered" data-i18n="status.ordered">Ordered</option>
+                                    <option value="Shipped" data-i18n="status.shipped">Shipped</option>
+                                    <option value="Delivered" data-i18n="status.delivered">Delivered</option>
+                                </select>
+
+                                <select id="colorFilter" onchange="app.loadOrders()" class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    <option value="" data-i18n="orders.allColors">All Colors</option>
+                                </select>
+
+                                <select id="sellerFilter" onchange="app.loadOrders()" class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    <option value="" data-i18n="orders.allSellers">All Sellers</option>
+                                </select>
+
+                                <input type="number" id="priceMinFilter" data-i18n-placeholder="filter.minPrice" placeholder="Min €"
+                                       oninput="app.loadOrders()"
+                                       class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500">
+
+                                <input type="number" id="priceMaxFilter" data-i18n-placeholder="filter.maxPrice" placeholder="Max €"
+                                       oninput="app.loadOrders()"
+                                       class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <!-- Order Statistics -->
+                        <div id="order-stats" class="mb-6"></div>
+                    </div>
+
+                    <!-- Add Order Form -->
+                    <div id="addOrderForm" class="hidden bg-white dark:bg-gradient-to-r dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-blue-500/30 mb-6">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center text-gray-800 dark:text-white">
+                            <i class="fas fa-plus-circle mr-3 text-blue-500 dark:text-blue-400"></i>
+                            <span data-i18n="orders.addNew">Add New Order</span>
+                        </h3>
+                        <form onsubmit="app.addOrder(event)" class="flex flex-col lg:flex-row gap-4">
+                            <div class="flex-1 relative">
+                                <i class="fas fa-link absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500 dark:text-blue-400"></i>
+                                <input type="url" id="orderUrl"
+                                       data-i18n-placeholder="orders.urlPlaceholder"
+                                       placeholder="Enter Kleinanzeigen URL..."
+                                       required
+                                       class="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-blue-900/30 border border-gray-200 dark:border-blue-500/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all">
+                            </div>
+                            <div class="flex gap-3">
+                                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-green-500/25">
+                                    <i class="fas fa-save mr-2"></i>
+                                    <span data-i18n="actions.save">Save</span>
+                                </button>
+                                <button type="button" onclick="app.hideAddOrderForm()" class="px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-xl hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                                    <i class="fas fa-times mr-2"></i>
+                                    <span data-i18n="actions.cancel">Cancel</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Orders List -->
+                    <div id="orders-list"></div>
                 </div>
-
-                <select id="statusFilter" onchange="app.loadOrders()" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Status</option>
-                    <option value="Ordered">📦 Ordered</option>
-                    <option value="Shipped">🚚 Shipped</option>
-                    <option value="Delivered">✅ Delivered</option>
-                </select>
-
-                <select id="colorFilter" onchange="app.loadOrders()" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Colors</option>
-                </select>
-
-                <select id="sellerFilter" onchange="app.loadOrders()" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Sellers</option>
-                </select>
-
-                <input type="number" id="priceMinFilter" placeholder="Min €"
-                       oninput="app.loadOrders()"
-                       class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500">
-
-                <input type="number" id="priceMaxFilter" placeholder="Max €"
-                       oninput="app.loadOrders()"
-                       class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500">
-            </div>
-        </div>
-
-        <!-- Order Statistics -->
-        <div id="order-stats" class="mb-6"></div>
-    </div>
-
-    <!-- Add Order Form -->
-    <div id="addOrderForm" class="hidden bg-gradient-to-r from-blue-900/50 to-indigo-900/50 rounded-2xl p-6 shadow-xl border border-blue-500/30 mb-6">
-        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
-            <i class="fas fa-plus-circle mr-3 text-blue-400"></i>
-            <span data-i18n="orders.addNew">Add New Order</span>
-        </h3>
-        <form onsubmit="app.addOrder(event)" class="flex flex-col lg:flex-row gap-4">
-            <div class="flex-1 relative">
-                <i class="fas fa-link absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400"></i>
-                <input type="url" id="orderUrl"
-                       placeholder="Enter Kleinanzeigen URL..."
-                       required
-                       class="w-full pl-12 pr-4 py-3 bg-blue-900/30 border border-blue-500/50 rounded-xl text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all">
-            </div>
-            <div class="flex gap-3">
-                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
-                    <i class="fas fa-save mr-2"></i>
-                    <span data-i18n="actions.save">Save</span>
-                </button>
-                <button type="button" onclick="app.hideAddOrderForm()" class="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    <span data-i18n="actions.cancel">Cancel</span>
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- Orders List -->
-    <div id="orders-list"></div>
-</div>
 
                 <!-- Price Watcher Section -->
                 <div id="watcher" class="section hidden">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 lg:mb-8 mt-12 lg:mt-0">
-                        <h2 class="text-2xl lg:text-3xl font-bold text-white" data-i18n="watcher.title">Price Watcher</h2>
+                        <h2 class="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white" data-i18n="watcher.title">Price Watcher</h2>
                         <div class="flex gap-2">
-                            <button onclick="app.checkAllPrices()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                            <button onclick="app.checkAllPrices()" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors shadow-sm">
                                 <i class="fas fa-sync-alt mr-2"></i>
                                 <span data-i18n="actions.checkPrices">Check Prices</span>
                             </button>
@@ -395,21 +428,22 @@
                     </div>
 
                     <!-- Add Watch Form -->
-                    <div id="addWatchForm" class="hidden bg-gradient-to-r from-blue-800 to-indigo-700 rounded-xl p-4 lg:p-6 shadow-lg border border-blue-600 mb-6 lg:mb-8">
-                        <h3 class="text-lg font-semibold text-white mb-4">Add Item to Watch</h3>
+                    <div id="addWatchForm" class="hidden bg-white dark:bg-gradient-to-r dark:from-blue-800 dark:to-indigo-700 rounded-xl p-4 lg:p-6 shadow-lg border border-gray-200 dark:border-blue-600 mb-6 lg:mb-8">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4" data-i18n="actions.addWatch">Add Item to Watch</h3>
                         <form onsubmit="app.addWatchedItem(event)" class="flex flex-col lg:flex-row gap-4">
                             <input type="url" id="watchUrl"
+                                   data-i18n-placeholder="orders.urlPlaceholder"
                                    placeholder="Enter Kleinanzeigen URL to watch..."
                                    required
-                                   class="flex-1 px-4 py-3 border border-blue-500 rounded-lg bg-blue-900 text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                                   class="flex-1 px-4 py-3 border border-gray-200 dark:border-blue-500 rounded-lg bg-gray-50 dark:bg-blue-900/30 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent">
                             <div class="flex gap-2">
                                 <button type="submit" class="flex-1 lg:flex-none px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
                                     <i class="fas fa-eye mr-2"></i>
-                                    Start Watching
+                                    <span data-i18n="actions.addWatch">Start Watching</span>
                                 </button>
-                                <button type="button" onclick="app.hideAddWatchForm()" class="flex-1 lg:flex-none px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                <button type="button" onclick="app.hideAddWatchForm()" class="flex-1 lg:flex-none px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
                                     <i class="fas fa-times mr-2"></i>
-                                    Cancel
+                                    <span data-i18n="actions.cancel">Cancel</span>
                                 </button>
                             </div>
                         </form>
@@ -421,8 +455,8 @@
                 <!-- Tracking Section -->
                 <div id="tracking" class="section hidden">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 lg:mb-8 mt-12 lg:mt-0">
-                        <h2 class="text-2xl lg:text-3xl font-bold text-white" data-i18n="tracking.title">Package Tracking</h2>
-                        <button onclick="app.updateAllTracking()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                        <h2 class="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white" data-i18n="tracking.title">Package Tracking</h2>
+                        <button onclick="app.updateAllTracking()" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors shadow-sm">
                             <i class="fas fa-sync-alt mr-2"></i>
                             <span data-i18n="actions.updateAll">Update All</span>
                         </button>
@@ -433,8 +467,8 @@
                 <!-- My Listings Section -->
                 <div id="listings" class="section hidden">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 lg:mb-8 mt-12 lg:mt-0">
-                        <h2 class="text-2xl lg:text-3xl font-bold text-white" data-i18n="listings.title">My Listings</h2>
-                        <button onclick="app.syncMyListings()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <h2 class="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white" data-i18n="listings.title">My Listings</h2>
+                        <button onclick="app.syncMyListings()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm">
                             <i class="fas fa-sync mr-2"></i>
                             <span data-i18n="actions.sync">Sync Listings</span>
                         </button>
@@ -444,35 +478,36 @@
 
                 <!-- Statistics Section -->
                 <div id="statistics" class="section hidden">
-                    <h2 class="text-2xl lg:text-3xl font-bold text-white mb-6 lg:mb-8 mt-12 lg:mt-0" data-i18n="statistics.title">Statistics</h2>
+                    <h2 class="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white mb-6 lg:mb-8 mt-12 lg:mt-0" data-i18n="statistics.title">Statistics</h2>
                     <div id="stats-content"></div>
                 </div>
 
                 <!-- Settings Section -->
                 <div id="settings" class="section hidden">
-                    <h2 class="text-2xl lg:text-3xl font-bold text-white mb-6 lg:mb-8 mt-12 lg:mt-0" data-i18n="settings.title">Settings</h2>
+                    <h2 class="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white mb-6 lg:mb-8 mt-12 lg:mt-0" data-i18n="settings.title">Settings</h2>
 
                     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
                         <!-- Colors Settings -->
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Order Colors</h3>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4" data-i18n="settings.colors">Order Colors</h3>
                             <div id="color-settings" class="space-y-3"></div>
                             <button onclick="app.addNewColor()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                <i class="fas fa-plus mr-2"></i>Add Color
+                                <i class="fas fa-plus mr-2"></i>
+                                <span data-i18n="settings.addColor">Add Color</span>
                             </button>
                         </div>
 
                         <!-- Notification Settings -->
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Notifications</h3>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4" data-i18n="notifications.title">Notifications</h3>
                             <div class="space-y-4">
                                 <div class="flex items-center justify-between">
-                                    <label class="text-white">Enable Notifications</label>
+                                    <label class="text-gray-700 dark:text-white" data-i18n="notifications.enable">Enable Notifications</label>
                                     <input type="checkbox" id="notifications-enabled" class="toggle-switch">
                                 </div>
                                 <div>
-                                    <label class="block text-white mb-2">Notification Sound</label>
-                                    <select id="notification-sound" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                                    <label class="block text-gray-700 dark:text-white mb-2" data-i18n="notifications.sound">Notification Sound</label>
+                                    <select id="notification-sound" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
                                         <option value="default">Default</option>
                                         <option value="bell">Bell</option>
                                         <option value="chime">Chime</option>
@@ -483,24 +518,24 @@
                         </div>
 
                         <!-- Auto-Monitoring Settings -->
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Auto-Monitoring</h3>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4" data-i18n="settings.autoMonitor">Auto-Monitoring</h3>
                             <div class="space-y-4">
                                 <div class="flex items-center justify-between">
-                                    <label class="text-white">Auto Price Check</label>
+                                    <label class="text-gray-700 dark:text-white" data-i18n="settings.autoPrice">Auto Price Check</label>
                                     <input type="checkbox" id="auto-check-enabled" class="toggle-switch">
                                 </div>
                                 <div>
-                                    <label class="block text-white mb-2">Price Check Interval (minutes)</label>
-                                    <input type="number" id="auto-check-interval" min="5" max="1440" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                                    <label class="block text-gray-700 dark:text-white mb-2" data-i18n="settings.priceInterval">Price Check Interval (minutes)</label>
+                                    <input type="number" id="auto-check-interval" min="5" max="1440" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <label class="text-white">Auto Tracking Check</label>
+                                    <label class="text-gray-700 dark:text-white" data-i18n="settings.autoTrack">Auto Tracking Check</label>
                                     <input type="checkbox" id="auto-tracking-enabled" class="toggle-switch">
                                 </div>
                                 <div>
-                                    <label class="block text-white mb-2">Tracking Check Interval (minutes)</label>
-                                    <input type="number" id="auto-tracking-interval" min="5" max="1440" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                                    <label class="block text-gray-700 dark:text-white mb-2" data-i18n="settings.trackInterval">Tracking Check Interval (minutes)</label>
+                                    <input type="number" id="auto-tracking-interval" min="5" max="1440" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white">
                                 </div>
                             </div>
                         </div>
@@ -508,39 +543,42 @@
 
                     <!-- Background Task Status & Controls -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Background Task Status</h3>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4" data-i18n="settings.backgroundStatus">Background Task Status</h3>
                             <div class="space-y-3">
                                 <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Price Monitoring:</span>
+                                    <span class="text-gray-500 dark:text-gray-400">Price Monitoring:</span>
                                     <span id="price-monitoring-status" class="font-medium">❌ Inactive</span>
                                 </div>
                                 <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Tracking Monitoring:</span>
+                                    <span class="text-gray-500 dark:text-gray-400">Tracking Monitoring:</span>
                                     <span id="tracking-monitoring-status" class="font-medium">❌ Inactive</span>
                                 </div>
                                 <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Last Price Check:</span>
-                                    <span id="last-price-check" class="text-gray-300 text-sm">Never</span>
+                                    <span class="text-gray-500 dark:text-gray-400" data-i18n="tracking.lastUpdate">Last Price Check:</span>
+                                    <span id="last-price-check" class="text-gray-500 dark:text-gray-300 text-sm">Never</span>
                                 </div>
                                 <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Last Tracking Check:</span>
-                                    <span id="last-tracking-check" class="text-gray-300 text-sm">Never</span>
+                                    <span class="text-gray-500 dark:text-gray-400" data-i18n="tracking.lastUpdate">Last Tracking Check:</span>
+                                    <span id="last-tracking-check" class="text-gray-500 dark:text-gray-300 text-sm">Never</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Manual Controls</h3>
+                        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4" data-i18n="settings.manualControls">Manual Controls</h3>
                             <div class="space-y-3">
                                 <button onclick="app.startBackgroundTasks()" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                                    <i class="fas fa-play mr-2"></i>Start Monitoring
+                                    <i class="fas fa-play mr-2"></i>
+                                    <span data-i18n="settings.startMonitor">Start Monitoring</span>
                                 </button>
                                 <button onclick="app.stopBackgroundTasks()" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                                    <i class="fas fa-stop mr-2"></i>Stop Monitoring
+                                    <i class="fas fa-stop mr-2"></i>
+                                    <span data-i18n="settings.stopMonitor">Stop Monitoring</span>
                                 </button>
                                 <button onclick="app.updateBackgroundTaskStatus()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                    <i class="fas fa-refresh mr-2"></i>Refresh Status
+                                    <i class="fas fa-refresh mr-2"></i>
+                                    <span data-i18n="settings.refreshStatus">Refresh Status</span>
                                 </button>
                             </div>
                         </div>
@@ -549,7 +587,8 @@
                     <!-- Save Button -->
                     <div class="mt-6">
                         <button onclick="app.saveSettings()" class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
-                            <i class="fas fa-save mr-2"></i>Save All Settings
+                            <i class="fas fa-save mr-2"></i>
+                            <span data-i18n="settings.save">Save All Settings</span>
                         </button>
                     </div>
                 </div>
@@ -558,48 +597,49 @@
     </div>
 
     <!-- Color Modal -->
-    <div id="colorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
-            <h3 class="text-xl font-semibold text-white mb-6">Select Color</h3>
+    <div id="colorModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-200 dark:border-gray-700">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-6" data-i18n="settings.colors">Select Color</h3>
             <div id="color-picker" class="grid grid-cols-6 gap-3 mb-6"></div>
             <div class="flex gap-3">
-                <button onclick="app.applyColor()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button onclick="app.applyColor()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" data-i18n="settings.apply">
                     Apply
                 </button>
-                <button onclick="app.closeColorModal()" class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                <button onclick="app.closeColorModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
                     <i class="fas fa-times mr-2"></i>
-                    Cancel
+                    <span data-i18n="actions.cancel">Cancel</span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Add Tracking Modal -->
-    <div id="trackingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
-            <h3 class="text-xl font-semibold text-white mb-6" data-i18n="tracking.addTitle">Add Tracking Number</h3>
+    <div id="trackingModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-200 dark:border-gray-700">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-6" data-i18n="tracking.addTitle">Add Tracking Number</h3>
             <form onsubmit="app.saveTracking(event)" id="trackingForm">
                 <input type="hidden" id="tracking_order_id">
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="tracking.carrier">Carrier</label>
-                    <select id="tracking_carrier" required class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2" data-i18n="tracking.carrier">Carrier</label>
+                    <select id="tracking_carrier" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                         <option value="">Select carrier...</option>
                         <option value="dhl">DHL</option>
                         <option value="hermes">Hermes</option>
                     </select>
                 </div>
                 <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="tracking.number">Tracking Number</label>
+                    <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2" data-i18n="tracking.number">Tracking Number</label>
                     <input type="text" id="tracking_number" required
+                           data-i18n-placeholder="tracking.number"
                            placeholder="Enter tracking number..."
-                           class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="flex gap-3">
                     <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                         <i class="fas fa-save mr-2"></i>
                         <span data-i18n="actions.save">Save</span>
                     </button>
-                    <button type="button" onclick="app.closeTrackingModal()" class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                    <button type="button" onclick="app.closeTrackingModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
                         <i class="fas fa-times mr-2"></i>
                         <span data-i18n="actions.cancel">Cancel</span>
                     </button>
@@ -609,48 +649,50 @@
     </div>
 
     <!-- Edit Order Modal -->
-    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
-            <h3 class="text-xl font-semibold text-white mb-6" data-i18n="edit.title">Edit Order</h3>
+    <div id="editModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-6" data-i18n="edit.title">Edit Order</h3>
             <form onsubmit="app.saveEdit(event)" id="editForm">
                 <input type="hidden" id="edit_id">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">Title</label>
+                        <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Title</label>
                         <input type="text" id="edit_title" required
-                               class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">Price (€)</label>
+                        <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2" data-i18n="order.price">Price (€)</label>
                         <input type="number" id="edit_price" step="0.01" min="0"
-                               class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">Status</label>
-                        <select id="edit_status" class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
-                            <option value="Ordered">Ordered</option>
-                            <option value="Shipped">Shipped</option>
-                            <option value="Delivered">Delivered</option>
+                        <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Status</label>
+                        <select id="edit_status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                            <option value="Ordered" data-i18n="status.ordered">Ordered</option>
+                            <option value="Shipped" data-i18n="status.shipped">Shipped</option>
+                            <option value="Delivered" data-i18n="status.delivered">Delivered</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">Color</label>
-                        <select id="edit_color" class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Color</label>
+                        <select id="edit_color" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                             <option value="">No Color</option>
                         </select>
                     </div>
                 </div>
                 <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Notes</label>
+                    <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Notes</label>
                     <textarea id="edit_notes" rows="3"
-                              class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500"></textarea>
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
                 <div class="flex gap-3">
                     <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-save mr-2"></i>Save
+                        <i class="fas fa-save mr-2"></i>
+                        <span data-i18n="actions.save">Save</span>
                     </button>
-                    <button type="button" onclick="app.closeEdit()" class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                        <i class="fas fa-times mr-2"></i>Cancel
+                    <button type="button" onclick="app.closeEdit()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-times mr-2"></i>
+                        <span data-i18n="actions.cancel">Cancel</span>
                     </button>
                 </div>
             </form>
@@ -658,12 +700,12 @@
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-xl p-8 max-w-sm w-full mx-4 border border-gray-700">
+    <div id="loadingOverlay" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-sm w-full mx-4 border border-gray-200 dark:border-gray-700 shadow-xl">
             <div class="text-center">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <h3 class="text-lg font-semibold text-white mb-2" data-i18n="loading.title">Loading...</h3>
-                <p id="loadingText" class="text-gray-400"></p>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2" data-i18n="loading.title">Loading...</h3>
+                <p id="loadingText" class="text-gray-500 dark:text-gray-400"></p>
             </div>
         </div>
     </div>
@@ -677,35 +719,35 @@
     </div>
 
     <!-- Mobile overlay -->
-    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden" onclick="app.toggleMobileMenu()"></div>
+    <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden backdrop-blur-sm" onclick="app.toggleMobileMenu()"></div>
 
     <!-- Price History Modal -->
-    <div id="priceHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-4xl max-h-[90vh] border border-gray-700">
+    <div id="priceHistoryModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-4xl max-h-[90vh] border border-gray-200 dark:border-gray-700">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-semibold text-white">Price History</h3>
-                <button onclick="app.closePriceHistoryModal()" class="text-gray-400 hover:text-white text-2xl">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Price History</h3>
+                <button onclick="app.closePriceHistoryModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white text-2xl">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="mb-4">
-                <h4 id="priceHistoryItemTitle" class="text-lg font-medium text-white mb-2"></h4>
+                <h4 id="priceHistoryItemTitle" class="text-lg font-medium text-gray-800 dark:text-white mb-2"></h4>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-gray-700 rounded-lg p-3">
-                        <p class="text-xs text-gray-400">Initial Price</p>
-                        <p id="initialPrice" class="text-lg font-bold text-blue-400"></p>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Initial Price</p>
+                        <p id="initialPrice" class="text-lg font-bold text-blue-500 dark:text-blue-400"></p>
                     </div>
-                    <div class="bg-gray-700 rounded-lg p-3">
-                        <p class="text-xs text-gray-400">Current Price</p>
-                        <p id="currentPrice" class="text-lg font-bold text-green-400"></p>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Current Price</p>
+                        <p id="currentPrice" class="text-lg font-bold text-green-500 dark:text-green-400"></p>
                     </div>
-                    <div class="bg-gray-700 rounded-lg p-3">
-                        <p class="text-xs text-gray-400">Lowest Price</p>
-                        <p id="lowestPrice" class="text-lg font-bold text-emerald-400"></p>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Lowest Price</p>
+                        <p id="lowestPrice" class="text-lg font-bold text-emerald-500 dark:text-emerald-400"></p>
                     </div>
-                    <div class="bg-gray-700 rounded-lg p-3">
-                        <p class="text-xs text-gray-400">Total Changes</p>
-                        <p id="totalChanges" class="text-lg font-bold text-orange-400"></p>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Total Changes</p>
+                        <p id="totalChanges" class="text-lg font-bold text-orange-500 dark:text-orange-400"></p>
                     </div>
                 </div>
             </div>
@@ -713,8 +755,8 @@
                 <canvas id="priceHistoryChart"></canvas>
             </div>
             <div id="priceHistoryTable" class="max-h-48 overflow-y-auto">
-                <table class="w-full text-sm text-gray-300">
-                    <thead class="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
+                <table class="w-full text-sm text-gray-700 dark:text-gray-300">
+                    <thead class="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-100 dark:bg-gray-700 sticky top-0">
                         <tr>
                             <th class="px-4 py-2 text-left">Date</th>
                             <th class="px-4 py-2 text-left">Price</th>

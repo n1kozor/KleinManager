@@ -1,4 +1,4 @@
-﻿from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -43,8 +43,7 @@ class OrderResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class WatchedItemCreate(BaseModel):
     """Schema for creating a watched item"""
@@ -69,8 +68,7 @@ class WatchedItemResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MyListingResponse(BaseModel):
     """Schema for my listing response"""
@@ -88,8 +86,7 @@ class MyListingResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SettingsUpdate(BaseModel):
     """Schema for settings update"""
@@ -108,6 +105,12 @@ class StatsResponse(BaseModel):
     transit: int
     value: str
     new_sellers: int
+    # Extended stats for insights
+    high_value_orders: int = 0
+    high_value_total: str = "0.00"
+    tracking_updates: int = 0
+    price_changes: int = 0
+    monthly_spending: float = 0.0
 
 class TrackingUpdate(BaseModel):
     """Schema for tracking update response"""

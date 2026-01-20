@@ -4,6 +4,7 @@ class KleinManagerCore {
         this.currentLang = localStorage.getItem('language') || 'en';
         this.currentSection = 'dashboard';
         this.viewMode = localStorage.getItem('viewMode') || 'grid';
+        this.theme = localStorage.getItem('theme') || 'dark';
         this.apiBase = '/api/v1';
         this.mobileMenuOpen = false;
         this.settings = {};
@@ -16,10 +17,11 @@ class KleinManagerCore {
 
         this.translations = {
             en: {
+                'app.title': 'KleinManager',
                 'nav.dashboard': 'Dashboard',
                 'nav.orders': 'Orders',
                 'nav.watcher': 'Price Watcher',
-                'nav.tracking': 'Package Tracking',
+                'nav.tracking': 'Tracking',
                 'nav.listings': 'My Listings',
                 'nav.statistics': 'Statistics',
                 'nav.settings': 'Settings',
@@ -31,9 +33,11 @@ class KleinManagerCore {
                 'statistics.title': 'Statistics',
                 'settings.title': 'Settings',
                 'orders.addNew': 'Add New Order',
-                'orders.searchPlaceholder': 'Search...',
+                'orders.searchPlaceholder': 'Search orders...',
                 'orders.urlPlaceholder': 'Enter Kleinanzeigen URL...',
                 'orders.allStatus': 'All Status',
+                'orders.allColors': 'All Colors',
+                'orders.allSellers': 'All Sellers',
                 'actions.checkPrices': 'Check Prices',
                 'actions.addWatch': 'Add Watch',
                 'actions.sync': 'Sync Listings',
@@ -64,13 +68,46 @@ class KleinManagerCore {
                 'edit.title': 'Edit Order',
                 'stats.total': 'Total Orders',
                 'stats.transit': 'In Transit',
+                'stats.delivered': 'Delivered',
                 'stats.value': 'Total Value',
+                'stats.avgOrder': 'Avg. Order',
                 'stats.newSellers': 'New Sellers',
+                'stats.statusChart': 'Order Status',
+                'stats.trendsChart': '30-Day Trends',
+                'stats.insights': 'Quick Insights',
+                'stats.priceChart': 'Price Ranges',
+                'stats.sellerChart': 'Top Sellers',
+                'stats.monthlyChart': 'Monthly Overview',
+                'stats.recent': 'Recent Activity',
                 'status.ordered': 'Ordered',
                 'status.shipped': 'Shipped',
-                'status.delivered': 'Delivered'
+                'status.delivered': 'Delivered',
+                'notifications.title': 'Notifications',
+                'notifications.clearAll': 'Clear All',
+                'notifications.empty': 'No new notifications',
+                'notifications.enable': 'Enable Notifications',
+                'notifications.sound': 'Notification Sound',
+                'settings.colors': 'Order Colors',
+                'settings.addColor': 'Add Color',
+                'settings.autoMonitor': 'Auto-Monitoring',
+                'settings.autoPrice': 'Auto Price Check',
+                'settings.priceInterval': 'Price Check Interval (minutes)',
+                'settings.autoTrack': 'Auto Tracking Check',
+                'settings.trackInterval': 'Tracking Check Interval (minutes)',
+                'settings.backgroundStatus': 'Background Task Status',
+                'settings.manualControls': 'Manual Controls',
+                'settings.startMonitor': 'Start Monitoring',
+                'settings.stopMonitor': 'Stop Monitoring',
+                'settings.refreshStatus': 'Refresh Status',
+                'settings.save': 'Save All Settings',
+                'settings.apply': 'Apply',
+                'settings.cancel': 'Cancel',
+                'filter.minPrice': 'Min €',
+                'filter.maxPrice': 'Max €',
+                'theme.toggle': 'Toggle Theme'
             },
             de: {
+                'app.title': 'KleinManager',
                 'nav.dashboard': 'Übersicht',
                 'nav.orders': 'Bestellungen',
                 'nav.watcher': 'Preis-Watcher',
@@ -89,6 +126,8 @@ class KleinManagerCore {
                 'orders.searchPlaceholder': 'Suchen...',
                 'orders.urlPlaceholder': 'Kleinanzeigen URL eingeben...',
                 'orders.allStatus': 'Alle Status',
+                'orders.allColors': 'Alle Farben',
+                'orders.allSellers': 'Alle Verkäufer',
                 'actions.checkPrices': 'Preise prüfen',
                 'actions.addWatch': 'Überwachung hinzufügen',
                 'actions.sync': 'Synchronisieren',
@@ -119,13 +158,138 @@ class KleinManagerCore {
                 'edit.title': 'Bestellung bearbeiten',
                 'stats.total': 'Gesamt',
                 'stats.transit': 'Unterwegs',
+                'stats.delivered': 'Zugestellt',
                 'stats.value': 'Gesamtwert',
+                'stats.avgOrder': 'Ø Bestellung',
                 'stats.newSellers': 'Neue Verkäufer',
+                'stats.statusChart': 'Bestellstatus',
+                'stats.trendsChart': '30-Tage Trends',
+                'stats.insights': 'Schnelle Einblicke',
+                'stats.priceChart': 'Preisspannen',
+                'stats.sellerChart': 'Top Verkäufer',
+                'stats.monthlyChart': 'Monatsübersicht',
+                'stats.recent': 'Letzte Aktivitäten',
                 'status.ordered': 'Bestellt',
                 'status.shipped': 'Versendet',
-                'status.delivered': 'Zugestellt'
+                'status.delivered': 'Zugestellt',
+                'notifications.title': 'Benachrichtigungen',
+                'notifications.clearAll': 'Alle löschen',
+                'notifications.empty': 'Keine neuen Benachrichtigungen',
+                'notifications.enable': 'Benachrichtigungen aktivieren',
+                'notifications.sound': 'Benachrichtigungston',
+                'settings.colors': 'Bestellfarben',
+                'settings.addColor': 'Farbe hinzufügen',
+                'settings.autoMonitor': 'Auto-Überwachung',
+                'settings.autoPrice': 'Auto-Preisprüfung',
+                'settings.priceInterval': 'Intervall (Minuten)',
+                'settings.autoTrack': 'Auto-Sendungsverfolgung',
+                'settings.trackInterval': 'Intervall (Minuten)',
+                'settings.backgroundStatus': 'Hintergrundaufgaben',
+                'settings.manualControls': 'Manuelle Steuerung',
+                'settings.startMonitor': 'Überwachung starten',
+                'settings.stopMonitor': 'Überwachung stoppen',
+                'settings.refreshStatus': 'Status aktualisieren',
+                'settings.save': 'Alle speichern',
+                'settings.apply': 'Anwenden',
+                'settings.cancel': 'Abbrechen',
+                'filter.minPrice': 'Min €',
+                'filter.maxPrice': 'Max €',
+                'theme.toggle': 'Design wechseln'
+            },
+            hu: {
+                'app.title': 'KleinManager',
+                'nav.dashboard': 'Áttekintés',
+                'nav.orders': 'Rendelések',
+                'nav.watcher': 'Árfigyelő',
+                'nav.tracking': 'Csomagkövetés',
+                'nav.listings': 'Hirdetéseim',
+                'nav.statistics': 'Statisztikák',
+                'nav.settings': 'Beállítások',
+                'dashboard.title': 'Áttekintés',
+                'orders.title': 'Rendelések',
+                'watcher.title': 'Árfigyelő',
+                'tracking.title': 'Csomagkövetés',
+                'listings.title': 'Hirdetéseim',
+                'statistics.title': 'Statisztikák',
+                'settings.title': 'Beállítások',
+                'orders.addNew': 'Új rendelés',
+                'orders.searchPlaceholder': 'Keresés...',
+                'orders.urlPlaceholder': 'Kleinanzeigen URL...',
+                'orders.allStatus': 'Összes állapot',
+                'orders.allColors': 'Összes szín',
+                'orders.allSellers': 'Összes eladó',
+                'actions.checkPrices': 'Árak ellenőrzése',
+                'actions.addWatch': 'Figyelés hozzáadása',
+                'actions.sync': 'Szinkronizálás',
+                'actions.addOrder': 'Rendelés hozzáadása',
+                'actions.save': 'Mentés',
+                'actions.cancel': 'Mégse',
+                'actions.refresh': 'Frissítés',
+                'actions.updateAll': 'Összes frissítése',
+                'actions.edit': 'Szerkesztés',
+                'actions.delete': 'Törlés',
+                'actions.addTracking': 'Követés hozzáadása',
+                'actions.updateTracking': 'Frissítés',
+                'actions.viewListing': 'Hirdetés megtekintése',
+                'actions.viewOrder': 'Rendelés megtekintése',
+                'loading.title': 'Betöltés...',
+                'seller.new': 'Új eladó',
+                'seller.since': 'Tagság kezdete',
+                'tracking.progress': 'Állapot',
+                'tracking.history': 'Előzmények',
+                'tracking.lastUpdate': 'Utolsó frissítés',
+                'tracking.addTitle': 'Csomagkövetési szám',
+                'tracking.carrier': 'Szolgáltató',
+                'tracking.number': 'Követési szám',
+                'order.price': 'Ár',
+                'order.category': 'Kategória',
+                'order.location': 'Hely',
+                'order.seller': 'Eladó',
+                'edit.title': 'Rendelés szerkesztése',
+                'stats.total': 'Összes rendelés',
+                'stats.transit': 'Szállítás alatt',
+                'stats.delivered': 'Kézbesítve',
+                'stats.value': 'Összérték',
+                'stats.avgOrder': 'Átlag rendelés',
+                'stats.newSellers': 'Új eladók',
+                'stats.statusChart': 'Rendelés állapotok',
+                'stats.trendsChart': '30 napos trend',
+                'stats.insights': 'Gyors elemzés',
+                'stats.priceChart': 'Ártartományok',
+                'stats.sellerChart': 'Legjobb eladók',
+                'stats.monthlyChart': 'Havi áttekintés',
+                'stats.recent': 'Legutóbbi tevékenységek',
+                'status.ordered': 'Megrendelve',
+                'status.shipped': 'Feladva',
+                'status.delivered': 'Kézbesítve',
+                'notifications.title': 'Értesítések',
+                'notifications.clearAll': 'Összes törlése',
+                'notifications.empty': 'Nincsenek új értesítések',
+                'notifications.enable': 'Értesítések engedélyezése',
+                'notifications.sound': 'Értesítési hang',
+                'settings.colors': 'Rendelés színek',
+                'settings.addColor': 'Szín hozzáadása',
+                'settings.autoMonitor': 'Automatikus figyelés',
+                'settings.autoPrice': 'Auto árfigyelés',
+                'settings.priceInterval': 'Időköz (perc)',
+                'settings.autoTrack': 'Auto csomagkövetés',
+                'settings.trackInterval': 'Időköz (perc)',
+                'settings.backgroundStatus': 'Háttérfolyamatok állapota',
+                'settings.manualControls': 'Kézi vezérlés',
+                'settings.startMonitor': 'Figyelés indítása',
+                'settings.stopMonitor': 'Figyelés leállítása',
+                'settings.refreshStatus': 'Állapot frissítése',
+                'settings.save': 'Beállítások mentése',
+                'settings.apply': 'Alkalmaz',
+                'settings.cancel': 'Mégse',
+                'filter.minPrice': 'Min €',
+                'filter.maxPrice': 'Max €',
+                'theme.toggle': 'Téma váltás'
             }
         };
+
+        // Initialize theme
+        this.initTheme();
     }
 
     // Mobile Menu
@@ -151,7 +315,10 @@ class KleinManagerCore {
 
     // Language Management
     toggleLanguage() {
-        this.currentLang = this.currentLang === 'en' ? 'de' : 'en';
+        const langs = ['en', 'de', 'hu'];
+        let currentIndex = langs.indexOf(this.currentLang);
+        this.currentLang = langs[(currentIndex + 1) % langs.length];
+
         localStorage.setItem('language', this.currentLang);
         document.getElementById('currentLang').textContent = this.currentLang.toUpperCase();
         this.updateTranslations();
@@ -175,6 +342,21 @@ class KleinManagerCore {
 
     t(key) {
         return this.translations[this.currentLang][key] || key;
+    }
+
+    // Theme Management
+    initTheme() {
+        if (this.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }
+
+    toggleTheme() {
+        this.theme = this.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', this.theme);
+        this.initTheme();
     }
 
     // View Mode Management
@@ -285,7 +467,7 @@ class KleinManagerCore {
         if (!this.settings.colors) return;
 
         if (colorFilter) {
-            colorFilter.innerHTML = '<option value="">All Colors</option>';
+            colorFilter.innerHTML = `<option value="" data-i18n="orders.allColors">${this.t('orders.allColors')}</option>`;
             this.settings.colors.forEach(color => {
                 colorFilter.innerHTML += `<option value="${color.value}">${color.name}</option>`;
             });
@@ -316,9 +498,9 @@ class KleinManagerCore {
     // Utility functions
     getStatusClass(status) {
         const classes = {
-            'Ordered': 'bg-gray-700 text-gray-300',
-            'Shipped': 'bg-blue-700 text-blue-200',
-            'Delivered': 'bg-green-700 text-green-200'
+            'Ordered': 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+            'Shipped': 'bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-200',
+            'Delivered': 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-200'
         };
         return classes[status] || classes['Ordered'];
     }

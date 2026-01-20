@@ -486,11 +486,32 @@ async def get_stats(db: Session = Depends(get_db)):
     value = db.query(func.sum(Order.price)).scalar() or 0
     new_sellers = db.query(Order).filter(Order.seller_is_new == True).count()
 
+    # Insights stats
+    high_value_threshold = 200.0
+    high_value_orders = db.query(Order).filter(Order.price >= high_value_threshold).count()
+    high_value_total_val = db.query(func.sum(Order.price)).filter(Order.price >= high_value_threshold).scalar() or 0
+
+    # Tracking updates (orders with recent tracking updates, say last 24h)
+    yesterday = datetime.now() - timedelta(days=1)
+    tracking_updates = db.query(Order).filter(Order.dhl_last_update >= yesterday).count()
+
+    # Price changes (watched items with recent updates)
+    price_changes = db.query(WatchedItem).filter(WatchedItem.last_checked >= yesterday).count()
+
+    # Monthly spending
+    current_month_start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    monthly_spending = db.query(func.sum(Order.price)).filter(Order.created_at >= current_month_start).scalar() or 0.0
+
     return {
         "total": total,
         "transit": transit,
         "value": f"{value:.2f}",
-        "new_sellers": new_sellers
+        "new_sellers": new_sellers,
+        "high_value_orders": high_value_orders,
+        "high_value_total": f"{high_value_total_val:.2f}",
+        "tracking_updates": tracking_updates,
+        "price_changes": price_changes,
+        "monthly_spending": monthly_spending
     }
 
 
@@ -512,3 +533,57 @@ async def get_detailed_stats(db: Session = Depends(get_db)):
         "by_status": by_status,
         "top_categories": [{"category": cat[0], "count": cat[1]} for cat in top_categories]
     }
+@router.get("/stats/trends")
+async def get_stats_trends(db: Session = Depends(get_db)):
+    """Get trend statistics"""
+    # Last 30 days
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+
+    daily_stats = db.query(
+        func.date(Order.created_at).label('date'),
+        func.count(Order.id).label('orders'),
+        func.sum(Order.price).label('total_value')
+    ).filter(
+        Order.created_at >= thirty_days_ago
+    ).group_by(
+        func.date(Order.created_at)
+    ).order_by(
+        func.date(Order.created_at)
+    ).all()
+
+    # Monthly stats (last 12 months)
+    one_year_ago = datetime.now() - timedelta(days=365)
+    monthly_stats = db.query(
+        func.strftime('%Y-%m', Order.created_at).label('month'),
+        func.count(Order.id).label('orders'),
+        func.sum(Order.price).label('total_value')
+    ).filter(
+        Order.created_at >= one_year_ago
+    ).group_by(
+        func.strftime('%Y-%m', Order.created_at)
+    ).order_by(
+        func.strftime('%Y-%m', Order.created_at)
+    ).all()
+
+    return {
+        "last_30_days": [
+            {"date": str(s.date), "orders": s.orders, "total_value": s.total_value or 0}
+            for s in daily_stats
+        ],
+        "monthly": [
+            {"month": str(s.month), "orders": s.orders, "total_value": s.total_value or 0}
+            for s in monthly_stats
+        ]
+    }
+
+@router.get("/stats/price-analysis")
+async def get_price_analysis(db: Session = Depends(get_db)):
+    """Get price distribution analysis"""
+    # Simple price ranges
+    ranges = {
+        "0-50": db.query(Order).filter(Order.price < 50).count(),
+        "50-100": db.query(Order).filter(Order.price >= 50, Order.price < 100).count(),
+        "100-500": db.query(Order).filter(Order.price >= 100, Order.price < 500).count(),
+        "500+": db.query(Order).filter(Order.price >= 500).count()
+    }
+    return {"price_ranges": ranges}
