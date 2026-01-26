@@ -366,7 +366,7 @@ class DashboardManager extends KleinManagerCore {
         const topSellers = stats.top_sellers || [];
 
         this.charts.seller = new Chart(ctx, {
-            type: 'horizontalBar',
+            type: 'bar',
             data: {
                 labels: topSellers.map(seller => seller.name.length > 15 ?
                     seller.name.substring(0, 15) + '...' : seller.name),
