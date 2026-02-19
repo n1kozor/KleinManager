@@ -5,10 +5,10 @@ from typing import Optional
 class Settings:
     """Application settings"""
     # Database
-    DATABASE_URL: str = "sqlite:///kleinmanager.db"
-    
+    DATABASE_URL: str = os.environ.get("DATABASE_URL", "sqlite:///kleinmanager.db")
+
     # Paths
-    IMAGE_STORAGE_PATH: str = "images"
+    IMAGE_STORAGE_PATH: str = os.environ.get("IMAGE_STORAGE_PATH", "images")
     TEMPLATE_DIR: str = "templates"
     STATIC_DIR: str = "static"
     

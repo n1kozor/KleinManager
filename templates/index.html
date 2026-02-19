@@ -1,743 +1,685 @@
-﻿<!DOCTYPE html>
-<html lang="en" class="dark">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KleinManager - Professional Order Management</title>
+    <title>KleinManager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body class="bg-gray-900">
-    <div id="app">
-        <!-- Mobile Menu Button -->
-        <div class="lg:hidden fixed top-4 left-4 z-50">
-            <button onclick="app.toggleMobileMenu()" class="p-2 bg-gray-800 rounded-lg border border-gray-700">
-                <i class="fas fa-bars text-white"></i>
-            </button>
-        </div>
+<body>
+<div id="app">
 
-        <!-- Notifications Modal -->
-        <div id="notificationsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-            <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md max-h-96 overflow-hidden">
-                <div class="p-4 border-b border-gray-700">
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-semibold text-white text-lg">
-                            <i class="fas fa-bell mr-2 text-blue-500"></i>
-                            Notifications
-                        </h3>
-                        <div class="flex items-center gap-3">
-                            <button onclick="app.clearAllNotifications()" class="text-xs text-gray-400 hover:text-white transition-colors">
-                                Clear All
-                            </button>
-                            <button onclick="app.closeNotifications()" class="text-gray-400 hover:text-white transition-colors">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
+    <!-- ========== Sidebar ========== -->
+    <div id="sidebarWrapper" class="sidebar-wrapper fixed inset-y-0 left-0 w-60 z-40 lg:translate-x-0">
+        <div class="sidebar h-full flex flex-col">
+            <!-- Logo -->
+            <div class="flex items-center gap-3 px-5 h-16 border-b border-[var(--border-primary)]">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <i class="fas fa-box-open text-white text-sm"></i>
                 </div>
-                <div id="notificationsList" class="max-h-80 overflow-y-auto">
-                    <div class="p-6 text-center text-gray-400">
-                        <i class="fas fa-bell-slash text-3xl mb-3 text-gray-500"></i>
-                        <p>No new notifications</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sidebar -->
-        <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-800 shadow-lg border-r border-gray-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40">
-            <div class="flex items-center justify-between h-16 px-6 border-b border-gray-700">
-                <h1 class="text-xl font-bold text-white">
-                    <i class="fas fa-box-open mr-2 text-blue-500"></i>KleinManager
-                </h1>
-                <button onclick="app.toggleMobileMenu()" class="lg:hidden p-2 hover:bg-gray-700 rounded">
-                    <i class="fas fa-times text-gray-400"></i>
+                <span class="sidebar-logo">KleinManager</span>
+                <button onclick="app.toggleMobileMenu()" class="lg:hidden ml-auto text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
 
-            <nav class="flex-1 px-4 py-6">
-                <div class="space-y-2">
-                    <button onclick="app.showSection('dashboard')"
-                            class="nav-item active w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-chart-line mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.dashboard">Dashboard</span>
-                    </button>
-
-                    <button onclick="app.showSection('orders')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-shopping-bag mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.orders">Orders</span>
-                    </button>
-
-                    <button onclick="app.showSection('watcher')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-eye mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.watcher">Price Watcher</span>
-                    </button>
-
-                    <button onclick="app.showSection('tracking')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-truck mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.tracking">Tracking</span>
-                    </button>
-
-                    <button onclick="app.showSection('statistics')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-chart-bar mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.statistics">Statistics</span>
-                    </button>
-
-                    <button onclick="app.showSection('settings')"
-                            class="nav-item w-full text-left px-4 py-3 rounded-lg flex items-center text-gray-200 hover:bg-gray-700 transition-colors duration-200">
-                        <i class="fas fa-cog mr-3 w-5 text-center"></i>
-                        <span data-i18n="nav.settings">Settings</span>
-                    </button>
-                </div>
+            <!-- Navigation -->
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <button onclick="app.showSection('dashboard')" class="nav-item active" data-section="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span data-i18n="nav.dashboard">Dashboard</span>
+                </button>
+                <button onclick="app.showSection('orders')" class="nav-item" data-section="orders">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span data-i18n="nav.orders">Orders</span>
+                </button>
+                <button onclick="app.showSection('watcher')" class="nav-item" data-section="watcher">
+                    <i class="fas fa-eye"></i>
+                    <span data-i18n="nav.watcher">Price Watcher</span>
+                </button>
+                <button onclick="app.showSection('tracking')" class="nav-item" data-section="tracking">
+                    <i class="fas fa-truck"></i>
+                    <span data-i18n="nav.tracking">Tracking</span>
+                </button>
+                <button onclick="app.showSection('statistics')" class="nav-item" data-section="statistics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span data-i18n="nav.statistics">Statistics</span>
+                </button>
+                <button onclick="app.showSection('settings')" class="nav-item" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span data-i18n="nav.settings">Settings</span>
+                </button>
             </nav>
 
             <!-- Sidebar Footer -->
-            <div class="p-4 border-t border-gray-700 space-y-3">
-                <!-- Notification Button -->
-                <button onclick="app.toggleNotifications()" class="relative w-full px-4 py-3 bg-gradient-to-r from-orange-600 to-red-600 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-200 shadow-lg group">
-                    <div class="flex items-center justify-center text-white">
-                        <i class="fas fa-bell text-lg mr-3"></i>
-                        <span class="font-semibold">Notifications</span>
-                    </div>
-                    <span id="notificationBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center hidden animate-pulse">0</span>
+            <div class="px-3 py-4 space-y-2 border-t border-[var(--border-primary)]">
+                <button onclick="app.toggleNotifications()" class="btn btn-ghost w-full relative">
+                    <i class="fas fa-bell"></i>
+                    <span data-i18n="nav.notifications">Notifications</span>
+                    <span id="notificationBadge" class="notification-badge hidden">0</span>
                 </button>
-
-                <!-- Language Toggle -->
-                <button onclick="app.toggleLanguage()" class="w-full px-4 py-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors duration-200">
-                    <div class="flex items-center justify-center">
-                        <i class="fas fa-language mr-3 text-gray-300"></i>
-                        <span class="text-sm font-medium text-gray-300">
-                            Language: <span id="currentLang" class="font-bold text-white">EN</span>
-                        </span>
-                    </div>
-                </button>
-
-                <!-- Update All Button -->
-                <button onclick="app.updateAllTracking()"
-                        class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg">
-                    <div class="flex items-center justify-center">
-                        <i class="fas fa-sync-alt mr-3"></i>
-                        <span class="font-medium" data-i18n="actions.updateAll">Update All</span>
-                    </div>
+                <button onclick="app.toggleLanguage()" class="btn btn-ghost w-full">
+                    <i class="fas fa-language"></i>
+                    <span id="currentLang">DE</span>
                 </button>
             </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="lg:ml-64 flex-1">
-            <div class="p-4 lg:p-6">
-                <!-- Dashboard Section -->
-<div id="dashboard" class="section">
-    <div class="mb-8 mt-12 lg:mt-0">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
-            <h2 class="text-3xl font-bold text-white flex items-center">
-                <i class="fas fa-chart-line mr-3 text-blue-500"></i>
-                <span data-i18n="dashboard.title">Dashboard</span>
-            </h2>
-            <div class="flex gap-3">
-                <button onclick="app.loadDashboard()" class="px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-colors">
-                    <i class="fas fa-sync-alt mr-2"></i>Refresh
-                </button>
-                <button onclick="app.showAddOrderForm(); app.showSection('orders')" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg">
-                    <i class="fas fa-plus mr-2"></i>Add Order
-                </button>
-            </div>
-        </div>
-
-        <!-- Enhanced Stats Cards Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6 mb-8">
-            <div class="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border border-blue-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-box text-2xl text-blue-400"></i>
-                </div>
-                <p class="text-sm text-blue-300 mb-2">Total Orders</p>
-                <p id="stat-total" class="text-3xl font-bold text-blue-400">0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-orange-600/20 to-orange-800/20 border border-orange-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-truck text-2xl text-orange-400"></i>
-                </div>
-                <p class="text-sm text-orange-300 mb-2">In Transit</p>
-                <p id="stat-transit" class="text-3xl font-bold text-orange-400">0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-green-600/20 to-green-800/20 border border-green-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-check-circle text-2xl text-green-400"></i>
-                </div>
-                <p class="text-sm text-green-300 mb-2">Delivered</p>
-                <p id="stat-delivered" class="text-3xl font-bold text-green-400">0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border border-purple-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-euro-sign text-2xl text-purple-400"></i>
-                </div>
-                <p class="text-sm text-purple-300 mb-2">Total Value</p>
-                <p id="stat-value" class="text-3xl font-bold text-purple-400">€0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 border border-yellow-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-chart-bar text-2xl text-yellow-400"></i>
-                </div>
-                <p class="text-sm text-yellow-300 mb-2">Avg. Order</p>
-                <p id="stat-avg-order" class="text-3xl font-bold text-yellow-400">€0</p>
-            </div>
-
-            <div class="bg-gradient-to-br from-red-600/20 to-red-800/20 border border-red-500/30 rounded-2xl p-6 text-center hover:scale-105 transition-transform duration-300">
-                <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <i class="fas fa-exclamation-triangle text-2xl text-red-400"></i>
-                </div>
-                <p class="text-sm text-red-300 mb-2">New Sellers</p>
-                <p id="stat-new-sellers" class="text-3xl font-bold text-red-400">0</p>
-            </div>
-        </div>
-
-        <!-- Charts and Insights Grid -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-            <!-- Status Distribution -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-chart-pie mr-2 text-blue-500"></i>
-                    Order Status
-                </h3>
-                <div class="h-64">
-                    <canvas id="statusChart"></canvas>
-                </div>
-            </div>
-
-            <!-- 30-Day Trends -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-chart-line mr-2 text-green-500"></i>
-                    30-Day Trends
-                </h3>
-                <div class="h-64">
-                    <canvas id="trendsChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Quick Insights -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
-                    Quick Insights
-                </h3>
-                <div id="quick-insights" class="h-64 overflow-y-auto"></div>
-            </div>
-        </div>
-
-        <!-- Additional Charts Row -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-            <!-- Price Distribution -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-tags mr-2 text-purple-500"></i>
-                    Price Ranges
-                </h3>
-                <div class="h-64">
-                    <canvas id="priceChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Top Sellers -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-users mr-2 text-indigo-500"></i>
-                    Top Sellers
-                </h3>
-                <div class="h-64">
-                    <canvas id="sellerChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Monthly Overview -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-calendar-alt mr-2 text-orange-500"></i>
-                    Monthly Overview
-                </h3>
-                <div class="h-64">
-                    <canvas id="monthlyChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-700">
-            <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                <i class="fas fa-clock mr-2 text-cyan-500"></i>
-                Recent Activity
-            </h3>
-            <div id="recent-activity" class="max-h-96 overflow-y-auto"></div>
         </div>
     </div>
-</div>
 
-                <!-- Orders Section -->
-               <div id="orders" class="section hidden">
-    <div class="mb-6 mt-12 lg:mt-0">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-            <h2 class="text-3xl font-bold text-white flex items-center">
-                <i class="fas fa-shopping-bag mr-3 text-blue-500"></i>
-                <span data-i18n="orders.title">Orders</span>
-            </h2>
+    <!-- Mobile overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden" onclick="app.toggleMobileMenu()"></div>
 
-            <div class="flex flex-wrap gap-2">
-                <button onclick="app.showAddOrderForm()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg">
-                    <i class="fas fa-plus mr-2"></i>
-                    <span data-i18n="actions.addOrder">Add Order</span>
-                </button>
-                <button onclick="app.clearAllFilters()" class="px-4 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-500 transition-colors">
-                    <i class="fas fa-eraser mr-2"></i>
-                    Clear Filters
-                </button>
-                <button onclick="app.toggleView()" class="px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-colors">
-                    <i id="viewToggleIcon" class="fas fa-th mr-2"></i>
-                    View
-                </button>
+    <!-- ========== Main Content ========== -->
+    <div class="main-content lg:ml-60">
+        <!-- Top Bar -->
+        <div class="sticky top-0 z-20 bg-[var(--bg-primary)]/80 backdrop-blur-lg border-b border-[var(--border-primary)]">
+            <div class="flex items-center justify-between h-14 px-4 lg:px-6">
+                <div class="flex items-center gap-3">
+                    <button onclick="app.toggleMobileMenu()" class="lg:hidden btn btn-ghost btn-icon">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 id="pageTitle" class="text-lg font-semibold" data-i18n="dashboard.title">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="app.updateAllTracking()" class="btn btn-ghost btn-sm" title="Update All Tracking">
+                        <i class="fas fa-sync-alt"></i>
+                        <span class="hidden sm:inline" data-i18n="actions.updateAll">Update All</span>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Smart Filters -->
-        <div class="bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-700 mb-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-                <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="searchInput"
-                           placeholder="Search orders..."
-                           oninput="app.loadOrders()"
-                           class="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+        <div class="p-4 lg:p-6">
+            <!-- ==================== DASHBOARD ==================== -->
+            <div id="dashboard" class="section active">
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4 mb-6 stagger-children">
+                    <div class="stat-card blue">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-box text-blue-400 text-sm"></i>
+                            <span class="stat-label" data-i18n="dashboard.totalOrders">Total</span>
+                        </div>
+                        <div id="stat-total" class="stat-value text-blue-400">0</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-truck text-orange-400 text-sm"></i>
+                            <span class="stat-label" data-i18n="dashboard.inTransit">In Transit</span>
+                        </div>
+                        <div id="stat-transit" class="stat-value text-orange-400">0</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-check-circle text-emerald-400 text-sm"></i>
+                            <span class="stat-label" data-i18n="dashboard.delivered">Delivered</span>
+                        </div>
+                        <div id="stat-delivered" class="stat-value text-emerald-400">0</div>
+                    </div>
+                    <div class="stat-card purple">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-euro-sign text-purple-400 text-sm"></i>
+                            <span class="stat-label" data-i18n="dashboard.value">Value</span>
+                        </div>
+                        <div id="stat-value" class="stat-value text-purple-400">&euro;0</div>
+                    </div>
+                    <div class="stat-card yellow">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-calculator text-yellow-400 text-sm"></i>
+                            <span class="stat-label" data-i18n="dashboard.avgOrder">Avg Order</span>
+                        </div>
+                        <div id="stat-avg-order" class="stat-value text-yellow-400">&euro;0</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-user-plus text-red-400 text-sm"></i>
+                            <span class="stat-label" data-i18n="dashboard.newSellers">New Sellers</span>
+                        </div>
+                        <div id="stat-new-sellers" class="stat-value text-red-400">0</div>
+                    </div>
                 </div>
 
-                <select id="statusFilter" onchange="app.loadOrders()" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Status</option>
-                    <option value="Ordered">📦 Ordered</option>
-                    <option value="Shipped">🚚 Shipped</option>
-                    <option value="Delivered">✅ Delivered</option>
-                </select>
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="dashboard.orderStatus">Order Status</h3>
+                        <div class="chart-container" style="height: 240px;"><canvas id="statusChart"></canvas></div>
+                    </div>
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="dashboard.dayTrend">30-Day Trend</h3>
+                        <div class="chart-container" style="height: 240px;"><canvas id="trendsChart"></canvas></div>
+                    </div>
+                </div>
 
-                <select id="colorFilter" onchange="app.loadOrders()" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Colors</option>
-                </select>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="dashboard.priceRanges">Price Ranges</h3>
+                        <div class="chart-container" style="height: 220px;"><canvas id="priceChart"></canvas></div>
+                    </div>
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="dashboard.topSellers">Top Sellers</h3>
+                        <div class="chart-container" style="height: 220px;"><canvas id="sellerChart"></canvas></div>
+                    </div>
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="dashboard.monthlyOverview">Monthly Overview</h3>
+                        <div class="chart-container" style="height: 220px;"><canvas id="monthlyChart"></canvas></div>
+                    </div>
+                </div>
 
-                <select id="sellerFilter" onchange="app.loadOrders()" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Sellers</option>
-                </select>
-
-                <input type="number" id="priceMinFilter" placeholder="Min €"
-                       oninput="app.loadOrders()"
-                       class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500">
-
-                <input type="number" id="priceMaxFilter" placeholder="Max €"
-                       oninput="app.loadOrders()"
-                       class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500">
+                <!-- Quick Insights + Recent Activity -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="dashboard.quickInsights">Quick Insights</h3>
+                        <div id="quick-insights"></div>
+                    </div>
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="dashboard.recentActivity">Recent Activity</h3>
+                        <div id="recent-activity" class="max-h-96 overflow-y-auto"></div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Order Statistics -->
-        <div id="order-stats" class="mb-6"></div>
-    </div>
+            <!-- ==================== ORDERS ==================== -->
+            <div id="orders" class="section">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="orders.title">Orders</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="app.showAddOrderForm()" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            <span data-i18n="actions.addOrder">Add Order</span>
+                        </button>
+                        <button onclick="app.clearAllFilters()" class="btn btn-ghost btn-sm">
+                            <i class="fas fa-eraser"></i> <span data-i18n="actions.clear">Clear</span>
+                        </button>
+                        <button onclick="app.toggleView()" class="btn btn-ghost btn-sm">
+                            <i id="viewToggleIcon" class="fas fa-th"></i>
+                        </button>
+                    </div>
+                </div>
 
-    <!-- Add Order Form -->
-    <div id="addOrderForm" class="hidden bg-gradient-to-r from-blue-900/50 to-indigo-900/50 rounded-2xl p-6 shadow-xl border border-blue-500/30 mb-6">
-        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
-            <i class="fas fa-plus-circle mr-3 text-blue-400"></i>
-            <span data-i18n="orders.addNew">Add New Order</span>
-        </h3>
-        <form onsubmit="app.addOrder(event)" class="flex flex-col lg:flex-row gap-4">
-            <div class="flex-1 relative">
-                <i class="fas fa-link absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400"></i>
-                <input type="url" id="orderUrl"
-                       placeholder="Enter Kleinanzeigen URL..."
-                       required
-                       class="w-full pl-12 pr-4 py-3 bg-blue-900/30 border border-blue-500/50 rounded-xl text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all">
-            </div>
-            <div class="flex gap-3">
-                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
-                    <i class="fas fa-save mr-2"></i>
-                    <span data-i18n="actions.save">Save</span>
-                </button>
-                <button type="button" onclick="app.hideAddOrderForm()" class="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    <span data-i18n="actions.cancel">Cancel</span>
-                </button>
-            </div>
-        </form>
-    </div>
+                <!-- Filters -->
+                <div class="filter-bar">
+                    <div class="input-with-icon flex-1 min-w-[200px]">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" data-i18n-placeholder="orders.searchPlaceholder" placeholder="Search orders..." oninput="app.loadOrders()" class="input">
+                    </div>
+                    <select id="statusFilter" onchange="app.loadOrders()" class="input" style="width: auto; min-width: 140px;">
+                        <option value="" data-i18n="orders.allStatus">All Status</option>
+                        <option value="Ordered" data-i18n="status.ordered">Ordered</option>
+                        <option value="Shipped" data-i18n="status.shipped">Shipped</option>
+                        <option value="Delivered" data-i18n="status.delivered">Delivered</option>
+                    </select>
+                    <select id="colorFilter" onchange="app.loadOrders()" class="input" style="width: auto; min-width: 130px;">
+                        <option value="" data-i18n="orders.allColors">All Colors</option>
+                    </select>
+                    <select id="sellerFilter" onchange="app.loadOrders()" class="input" style="width: auto; min-width: 130px;">
+                        <option value="" data-i18n="orders.allSellers">All Sellers</option>
+                    </select>
+                    <input type="number" id="priceMinFilter" data-i18n-placeholder="misc.minPrice" placeholder="Min &euro;" oninput="app.loadOrders()" class="input" style="width: 100px;">
+                    <input type="number" id="priceMaxFilter" data-i18n-placeholder="misc.maxPrice" placeholder="Max &euro;" oninput="app.loadOrders()" class="input" style="width: 100px;">
+                </div>
 
-    <!-- Orders List -->
-    <div id="orders-list"></div>
-</div>
+                <!-- Order Stats -->
+                <div id="order-stats" class="mb-4"></div>
 
-                <!-- Price Watcher Section -->
-                <div id="watcher" class="section hidden">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 lg:mb-8 mt-12 lg:mt-0">
-                        <h2 class="text-2xl lg:text-3xl font-bold text-white" data-i18n="watcher.title">Price Watcher</h2>
+                <!-- Add Order Form -->
+                <div id="addOrderForm" class="hidden mb-6 card p-5 border-blue-500/30 animate-slide-up">
+                    <h3 class="text-base font-semibold mb-4 flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-blue-400"></i>
+                        <span data-i18n="orders.addNew">Add New Order</span>
+                    </h3>
+                    <form onsubmit="app.addOrder(event)" class="flex flex-col lg:flex-row gap-3">
+                        <div class="input-with-icon flex-1">
+                            <i class="fas fa-link"></i>
+                            <input type="url" id="orderUrl" data-i18n-placeholder="misc.urlPlaceholder" placeholder="Kleinanzeigen URL..." required class="input">
+                        </div>
                         <div class="flex gap-2">
-                            <button onclick="app.checkAllPrices()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
-                                <i class="fas fa-sync-alt mr-2"></i>
-                                <span data-i18n="actions.checkPrices">Check Prices</span>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> <span data-i18n="actions.save">Save</span>
                             </button>
-                            <button onclick="app.showAddWatchForm()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg">
-                                <i class="fas fa-plus mr-2"></i>
-                                <span data-i18n="actions.addWatch">Add Watch</span>
+                            <button type="button" onclick="app.hideAddOrderForm()" class="btn btn-ghost">
+                                <i class="fas fa-times"></i>
                             </button>
                         </div>
-                    </div>
-
-                    <!-- Add Watch Form -->
-                    <div id="addWatchForm" class="hidden bg-gradient-to-r from-blue-800 to-indigo-700 rounded-xl p-4 lg:p-6 shadow-lg border border-blue-600 mb-6 lg:mb-8">
-                        <h3 class="text-lg font-semibold text-white mb-4">Add Item to Watch</h3>
-                        <form onsubmit="app.addWatchedItem(event)" class="flex flex-col lg:flex-row gap-4">
-                            <input type="url" id="watchUrl"
-                                   placeholder="Enter Kleinanzeigen URL to watch..."
-                                   required
-                                   class="flex-1 px-4 py-3 border border-blue-500 rounded-lg bg-blue-900 text-white placeholder-blue-300 focus:ring-2 focus:ring-blue-400 focus:border-transparent">
-                            <div class="flex gap-2">
-                                <button type="submit" class="flex-1 lg:flex-none px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
-                                    <i class="fas fa-eye mr-2"></i>
-                                    Start Watching
-                                </button>
-                                <button type="button" onclick="app.hideAddWatchForm()" class="flex-1 lg:flex-none px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                                    <i class="fas fa-times mr-2"></i>
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div id="watched-items-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6"></div>
+                    </form>
                 </div>
 
-                <!-- Tracking Section -->
-                <div id="tracking" class="section hidden">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 lg:mb-8 mt-12 lg:mt-0">
-                        <h2 class="text-2xl lg:text-3xl font-bold text-white" data-i18n="tracking.title">Package Tracking</h2>
-                        <button onclick="app.updateAllTracking()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
-                            <i class="fas fa-sync-alt mr-2"></i>
-                            <span data-i18n="actions.updateAll">Update All</span>
+                <!-- Orders List -->
+                <div id="orders-list"></div>
+            </div>
+
+            <!-- ==================== PRICE WATCHER ==================== -->
+            <div id="watcher" class="section">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="watcher.title">Price Watcher</h2>
+                    <div class="flex gap-2">
+                        <button onclick="app.checkAllPrices()" class="btn btn-warning btn-sm">
+                            <i class="fas fa-sync-alt"></i>
+                            <span data-i18n="actions.checkPrices">Check Prices</span>
+                        </button>
+                        <button onclick="app.showAddWatchForm()" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i>
+                            <span data-i18n="actions.addWatch">Add Watch</span>
                         </button>
                     </div>
-                    <div id="tracking-list" class="space-y-4 lg:space-y-6"></div>
                 </div>
 
-                <!-- My Listings Section -->
-                <div id="listings" class="section hidden">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 lg:mb-8 mt-12 lg:mt-0">
-                        <h2 class="text-2xl lg:text-3xl font-bold text-white" data-i18n="listings.title">My Listings</h2>
-                        <button onclick="app.syncMyListings()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                            <i class="fas fa-sync mr-2"></i>
-                            <span data-i18n="actions.sync">Sync Listings</span>
-                        </button>
-                    </div>
-                    <div id="my-listings-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6"></div>
-                </div>
-
-                <!-- Statistics Section -->
-                <div id="statistics" class="section hidden">
-                    <h2 class="text-2xl lg:text-3xl font-bold text-white mb-6 lg:mb-8 mt-12 lg:mt-0" data-i18n="statistics.title">Statistics</h2>
-                    <div id="stats-content"></div>
-                </div>
-
-                <!-- Settings Section -->
-                <div id="settings" class="section hidden">
-                    <h2 class="text-2xl lg:text-3xl font-bold text-white mb-6 lg:mb-8 mt-12 lg:mt-0" data-i18n="settings.title">Settings</h2>
-
-                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                        <!-- Colors Settings -->
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Order Colors</h3>
-                            <div id="color-settings" class="space-y-3"></div>
-                            <button onclick="app.addNewColor()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                <i class="fas fa-plus mr-2"></i>Add Color
+                <!-- Add Watch Form -->
+                <div id="addWatchForm" class="hidden mb-6 card p-5 border-blue-500/30 animate-slide-up">
+                    <h3 class="text-base font-semibold mb-4" data-i18n="watcher.addItem">Add Item to Watch</h3>
+                    <form onsubmit="app.addWatchedItem(event)" class="flex flex-col lg:flex-row gap-3">
+                        <div class="input-with-icon flex-1">
+                            <i class="fas fa-link"></i>
+                            <input type="url" id="watchUrl" data-i18n-placeholder="watcher.urlPlaceholder" placeholder="Kleinanzeigen URL to watch..." required class="input">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-eye"></i> <span data-i18n="actions.startWatching">Start Watching</span>
+                            </button>
+                            <button type="button" onclick="app.hideAddWatchForm()" class="btn btn-ghost">
+                                <i class="fas fa-times"></i>
                             </button>
                         </div>
+                    </form>
+                </div>
 
-                        <!-- Notification Settings -->
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Notifications</h3>
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <label class="text-white">Enable Notifications</label>
-                                    <input type="checkbox" id="notifications-enabled" class="toggle-switch">
-                                </div>
-                                <div>
-                                    <label class="block text-white mb-2">Notification Sound</label>
-                                    <select id="notification-sound" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                                        <option value="default">Default</option>
-                                        <option value="bell">Bell</option>
-                                        <option value="chime">Chime</option>
-                                        <option value="ding">Ding</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                <div id="watched-items-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+            </div>
 
-                        <!-- Auto-Monitoring Settings -->
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Auto-Monitoring</h3>
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <label class="text-white">Auto Price Check</label>
-                                    <input type="checkbox" id="auto-check-enabled" class="toggle-switch">
-                                </div>
-                                <div>
-                                    <label class="block text-white mb-2">Price Check Interval (minutes)</label>
-                                    <input type="number" id="auto-check-interval" min="5" max="1440" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <label class="text-white">Auto Tracking Check</label>
-                                    <input type="checkbox" id="auto-tracking-enabled" class="toggle-switch">
-                                </div>
-                                <div>
-                                    <label class="block text-white mb-2">Tracking Check Interval (minutes)</label>
-                                    <input type="number" id="auto-tracking-interval" min="5" max="1440" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- ==================== TRACKING ==================== -->
+            <div id="tracking" class="section">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="tracking.title">Package Tracking</h2>
+                    <button onclick="app.updateAllTracking()" class="btn btn-warning btn-sm">
+                        <i class="fas fa-sync-alt"></i>
+                        <span data-i18n="actions.updateAll">Update All</span>
+                    </button>
+                </div>
+                <div id="tracking-list" class="space-y-4"></div>
+            </div>
 
-                    <!-- Background Task Status & Controls -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Background Task Status</h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Price Monitoring:</span>
-                                    <span id="price-monitoring-status" class="font-medium">❌ Inactive</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Tracking Monitoring:</span>
-                                    <span id="tracking-monitoring-status" class="font-medium">❌ Inactive</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Last Price Check:</span>
-                                    <span id="last-price-check" class="text-gray-300 text-sm">Never</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-400">Last Tracking Check:</span>
-                                    <span id="last-tracking-check" class="text-gray-300 text-sm">Never</span>
-                                </div>
-                            </div>
-                        </div>
+            <!-- ==================== MY LISTINGS ==================== -->
+            <div id="listings" class="section">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="listings.title">My Listings</h2>
+                    <button onclick="app.syncMyListings()" class="btn btn-success btn-sm">
+                        <i class="fas fa-sync"></i>
+                        <span data-i18n="actions.sync">Sync Listings</span>
+                    </button>
+                </div>
+                <div id="my-listings-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
 
-                        <div class="bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-700">
-                            <h3 class="text-lg font-semibold text-white mb-4">Manual Controls</h3>
-                            <div class="space-y-3">
-                                <button onclick="app.startBackgroundTasks()" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                                    <i class="fas fa-play mr-2"></i>Start Monitoring
-                                </button>
-                                <button onclick="app.stopBackgroundTasks()" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                                    <i class="fas fa-stop mr-2"></i>Stop Monitoring
-                                </button>
-                                <button onclick="app.updateBackgroundTaskStatus()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                    <i class="fas fa-refresh mr-2"></i>Refresh Status
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            <!-- ==================== STATISTICS ==================== -->
+            <div id="statistics" class="section">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="statistics.title">Statistics</h2>
+                </div>
+                <div id="stats-content"></div>
+            </div>
 
-                    <!-- Save Button -->
-                    <div class="mt-6">
-                        <button onclick="app.saveSettings()" class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
-                            <i class="fas fa-save mr-2"></i>Save All Settings
+            <!-- ==================== SETTINGS ==================== -->
+            <div id="settings" class="section">
+                <div class="section-header">
+                    <h2 class="section-title" data-i18n="settings.title">Settings</h2>
+                    <button onclick="app.saveSettings()" class="btn btn-success">
+                        <i class="fas fa-save"></i> <span data-i18n="actions.saveSettings">Save Settings</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
+                    <!-- Colors -->
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="settings.orderColors">Order Colors</h3>
+                        <div id="color-settings" class="space-y-2"></div>
+                        <button onclick="app.addNewColor()" class="btn btn-ghost btn-sm w-full mt-3">
+                            <i class="fas fa-plus"></i> <span data-i18n="actions.addColor">Add Color</span>
                         </button>
                     </div>
+
+                    <!-- Notifications -->
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="settings.notifications">Notifications</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm" data-i18n="settings.enableNotifications">Enable Notifications</span>
+                                <label class="toggle">
+                                    <input type="checkbox" id="notifications-enabled">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="settings.sound">Sound</label>
+                                <select id="notification-sound" class="input">
+                                    <option value="default">Default</option>
+                                    <option value="bell">Bell</option>
+                                    <option value="chime">Chime</option>
+                                    <option value="ding">Ding</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Auto-Monitoring -->
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="settings.autoMonitoring">Auto-Monitoring</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm" data-i18n="settings.priceMonitoring">Price Monitoring</span>
+                                <label class="toggle">
+                                    <input type="checkbox" id="auto-check-enabled">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="settings.intervalMin">Interval (min)</label>
+                                <input type="number" id="auto-check-interval" min="5" max="1440" class="input">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm" data-i18n="settings.trackingMonitoring">Tracking Monitoring</span>
+                                <label class="toggle">
+                                    <input type="checkbox" id="auto-tracking-enabled">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="settings.intervalMin">Interval (min)</label>
+                                <input type="number" id="auto-tracking-interval" min="5" max="1440" class="input">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status & Controls -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="settings.taskStatus">Task Status</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-[var(--text-muted)]" data-i18n="settings.priceMonitoring">Price Monitoring</span>
+                                <span id="price-monitoring-status" class="font-medium text-red-400" data-i18n="settings.inactive">Inactive</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-[var(--text-muted)]" data-i18n="settings.trackingMonitoring">Tracking Monitoring</span>
+                                <span id="tracking-monitoring-status" class="font-medium text-red-400" data-i18n="settings.inactive">Inactive</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-[var(--text-muted)]" data-i18n="settings.lastPriceCheck">Last Price Check</span>
+                                <span id="last-price-check" class="text-[var(--text-secondary)]" data-i18n="settings.never">Never</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-[var(--text-muted)]" data-i18n="settings.lastTrackingCheck">Last Tracking Check</span>
+                                <span id="last-tracking-check" class="text-[var(--text-secondary)]" data-i18n="settings.never">Never</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-5">
+                        <h3 class="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4" data-i18n="settings.controls">Controls</h3>
+                        <div class="space-y-2">
+                            <button onclick="app.startBackgroundTasks()" class="btn btn-success w-full">
+                                <i class="fas fa-play"></i> <span data-i18n="actions.startMonitoring">Start Monitoring</span>
+                            </button>
+                            <button onclick="app.stopBackgroundTasks()" class="btn btn-danger w-full">
+                                <i class="fas fa-stop"></i> <span data-i18n="actions.stopMonitoring">Stop Monitoring</span>
+                            </button>
+                            <button onclick="app.updateBackgroundTaskStatus()" class="btn btn-ghost w-full">
+                                <i class="fas fa-refresh"></i> <span data-i18n="actions.refreshStatus">Refresh Status</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /p-4 -->
+    </div><!-- /main-content -->
+
+    <!-- ========== MODALS ========== -->
+
+    <!-- Notifications Modal -->
+    <div id="notificationsModal" class="modal-overlay">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h3 class="font-semibold flex items-center gap-2">
+                    <i class="fas fa-bell text-blue-400"></i> <span data-i18n="nav.notifications">Notifications</span>
+                </h3>
+                <div class="flex items-center gap-3">
+                    <button onclick="app.clearAllNotifications()" class="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]" data-i18n="actions.clearAll">Clear All</button>
+                    <button onclick="app.closeNotifications()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="notificationsList" class="max-h-80 overflow-y-auto">
+                <div class="empty-state" style="padding: 2rem 1rem;">
+                    <i class="fas fa-bell-slash" style="font-size: 2rem;"></i>
+                    <p data-i18n="notifications.noNew">No new notifications</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Color Modal -->
-    <div id="colorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
-            <h3 class="text-xl font-semibold text-white mb-6">Select Color</h3>
-            <div id="color-picker" class="grid grid-cols-6 gap-3 mb-6"></div>
-            <div class="flex gap-3">
-                <button onclick="app.applyColor()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Apply
+    <div id="colorModal" class="modal-overlay">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h3 class="font-semibold" data-i18n="color.selectColor">Select Color</h3>
+                <button onclick="app.closeColorModal()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                    <i class="fas fa-times"></i>
                 </button>
-                <button onclick="app.closeColorModal()" class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    Cancel
-                </button>
+            </div>
+            <div class="modal-body">
+                <div id="color-picker" class="grid grid-cols-6 gap-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="app.closeColorModal()" class="btn btn-ghost" data-i18n="actions.cancel">Cancel</button>
+                <button onclick="app.applyColor()" class="btn btn-primary" data-i18n="actions.apply">Apply</button>
             </div>
         </div>
     </div>
 
-    <!-- Add Tracking Modal -->
-    <div id="trackingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
-            <h3 class="text-xl font-semibold text-white mb-6" data-i18n="tracking.addTitle">Add Tracking Number</h3>
+    <!-- Tracking Modal -->
+    <div id="trackingModal" class="modal-overlay">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h3 class="font-semibold" data-i18n="tracking.addTitle">Add Tracking Number</h3>
+                <button onclick="app.closeTrackingModal()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form onsubmit="app.saveTracking(event)" id="trackingForm">
                 <input type="hidden" id="tracking_order_id">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="tracking.carrier">Carrier</label>
-                    <select id="tracking_carrier" required class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select carrier...</option>
-                        <option value="dhl">DHL</option>
-                        <option value="hermes">Hermes</option>
-                    </select>
+                <div class="modal-body space-y-4">
+                    <div>
+                        <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="tracking.carrier">Carrier</label>
+                        <select id="tracking_carrier" required class="input">
+                            <option value="" data-i18n="tracking.selectCarrier">Select carrier...</option>
+                            <option value="dhl">DHL</option>
+                            <option value="hermes">Hermes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="tracking.number">Tracking Number</label>
+                        <input type="text" id="tracking_number" required data-i18n-placeholder="tracking.enterNumber" placeholder="Enter tracking number..." class="input">
+                    </div>
                 </div>
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-400 mb-2" data-i18n="tracking.number">Tracking Number</label>
-                    <input type="text" id="tracking_number" required
-                           placeholder="Enter tracking number..."
-                           class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="flex gap-3">
-                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-save mr-2"></i>
-                        <span data-i18n="actions.save">Save</span>
-                    </button>
-                    <button type="button" onclick="app.closeTrackingModal()" class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                        <i class="fas fa-times mr-2"></i>
-                        <span data-i18n="actions.cancel">Cancel</span>
-                    </button>
+                <div class="modal-footer">
+                    <button type="button" onclick="app.closeTrackingModal()" class="btn btn-ghost" data-i18n="actions.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <span data-i18n="actions.save">Save</span></button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Edit Order Modal -->
-    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-700">
-            <h3 class="text-xl font-semibold text-white mb-6" data-i18n="edit.title">Edit Order</h3>
+    <div id="editModal" class="modal-overlay">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3 class="font-semibold" data-i18n="edit.title">Edit Order</h3>
+                <button onclick="app.closeEdit()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form onsubmit="app.saveEdit(event)" id="editForm">
                 <input type="hidden" id="edit_id">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">Title</label>
-                        <input type="text" id="edit_title" required
-                               class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
+                <div class="modal-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="edit.titleField">Title</label>
+                            <input type="text" id="edit_title" required class="input">
+                        </div>
+                        <div>
+                            <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="edit.priceField">Price (&euro;)</label>
+                            <input type="number" id="edit_price" step="0.01" min="0" class="input">
+                        </div>
+                        <div>
+                            <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="edit.statusField">Status</label>
+                            <select id="edit_status" class="input">
+                                <option value="Ordered" data-i18n="status.ordered">Ordered</option>
+                                <option value="Shipped" data-i18n="status.shipped">Shipped</option>
+                                <option value="Delivered" data-i18n="status.delivered">Delivered</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="edit.colorField">Color</label>
+                            <select id="edit_color" class="input">
+                                <option value="" data-i18n="orders.noColor">No Color</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">Price (€)</label>
-                        <input type="number" id="edit_price" step="0.01" min="0"
-                               class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">Status</label>
-                        <select id="edit_status" class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
-                            <option value="Ordered">Ordered</option>
-                            <option value="Shipped">Shipped</option>
-                            <option value="Delivered">Delivered</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-2">Color</label>
-                        <select id="edit_color" class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500">
-                            <option value="">No Color</option>
-                        </select>
+                        <label class="text-sm text-[var(--text-muted)] block mb-2" data-i18n="edit.notesField">Notes</label>
+                        <textarea id="edit_notes" rows="3" class="input" style="resize: vertical;"></textarea>
                     </div>
                 </div>
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Notes</label>
-                    <textarea id="edit_notes" rows="3"
-                              class="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500"></textarea>
-                </div>
-                <div class="flex gap-3">
-                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-save mr-2"></i>Save
-                    </button>
-                    <button type="button" onclick="app.closeEdit()" class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                        <i class="fas fa-times mr-2"></i>Cancel
-                    </button>
+                <div class="modal-footer">
+                    <button type="button" onclick="app.closeEdit()" class="btn btn-ghost" data-i18n="actions.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <span data-i18n="actions.save">Save</span></button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-xl p-8 max-w-sm w-full mx-4 border border-gray-700">
-            <div class="text-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <h3 class="text-lg font-semibold text-white mb-2" data-i18n="loading.title">Loading...</h3>
-                <p id="loadingText" class="text-gray-400"></p>
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal modal-sm">
+            <div class="confirm-dialog">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3 id="confirmTitle">Are you sure?</h3>
+                <p id="confirmMessage">This action cannot be undone.</p>
+                <div class="btn-group">
+                    <button onclick="app.cancelConfirm()" class="btn btn-ghost" data-i18n="actions.cancel">Cancel</button>
+                    <button id="confirmAction" onclick="app.executeConfirm()" class="btn btn-danger" data-i18n="actions.delete">Delete</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-4 right-4 z-50 hidden">
-        <div id="toastContent" class="px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] max-w-md">
-            <i id="toastIcon" class="fas text-xl"></i>
-            <span id="toastText" class="font-medium"></span>
-        </div>
-    </div>
-
-    <!-- Mobile overlay -->
-    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden" onclick="app.toggleMobileMenu()"></div>
-
     <!-- Price History Modal -->
-    <div id="priceHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-xl p-6 w-full max-w-4xl max-h-[90vh] border border-gray-700">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-semibold text-white">Price History</h3>
-                <button onclick="app.closePriceHistoryModal()" class="text-gray-400 hover:text-white text-2xl">
+    <div id="priceHistoryModal" class="modal-overlay">
+        <div class="modal modal-xl">
+            <div class="modal-header">
+                <h3 class="font-semibold" data-i18n="watcher.priceHistory">Price History</h3>
+                <button onclick="app.closePriceHistoryModal()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="mb-4">
-                <h4 id="priceHistoryItemTitle" class="text-lg font-medium text-white mb-2"></h4>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-gray-700 rounded-lg p-3">
-                        <p class="text-xs text-gray-400">Initial Price</p>
+            <div class="modal-body">
+                <h4 id="priceHistoryItemTitle" class="text-lg font-medium mb-4"></h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-[var(--text-muted)]" data-i18n="watcher.initial">Initial</p>
                         <p id="initialPrice" class="text-lg font-bold text-blue-400"></p>
                     </div>
-                    <div class="bg-gray-700 rounded-lg p-3">
-                        <p class="text-xs text-gray-400">Current Price</p>
-                        <p id="currentPrice" class="text-lg font-bold text-green-400"></p>
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-[var(--text-muted)]" data-i18n="watcher.current">Current</p>
+                        <p id="currentPrice" class="text-lg font-bold text-emerald-400"></p>
                     </div>
-                    <div class="bg-gray-700 rounded-lg p-3">
-                        <p class="text-xs text-gray-400">Lowest Price</p>
-                        <p id="lowestPrice" class="text-lg font-bold text-emerald-400"></p>
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-[var(--text-muted)]" data-i18n="watcher.lowest">Lowest</p>
+                        <p id="lowestPrice" class="text-lg font-bold text-green-400"></p>
                     </div>
-                    <div class="bg-gray-700 rounded-lg p-3">
-                        <p class="text-xs text-gray-400">Total Changes</p>
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-[var(--text-muted)]" data-i18n="watcher.changes">Changes</p>
                         <p id="totalChanges" class="text-lg font-bold text-orange-400"></p>
                     </div>
                 </div>
-            </div>
-            <div class="h-96 mb-4">
-                <canvas id="priceHistoryChart"></canvas>
-            </div>
-            <div id="priceHistoryTable" class="max-h-48 overflow-y-auto">
-                <table class="w-full text-sm text-gray-300">
-                    <thead class="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
-                        <tr>
-                            <th class="px-4 py-2 text-left">Date</th>
-                            <th class="px-4 py-2 text-left">Price</th>
-                            <th class="px-4 py-2 text-left">Change</th>
-                        </tr>
-                    </thead>
-                    <tbody id="priceHistoryTableBody">
-                    </tbody>
-                </table>
+                <div class="chart-container mb-4" style="height: 300px;">
+                    <canvas id="priceHistoryChart"></canvas>
+                </div>
+                <div id="priceHistoryTable" class="max-h-48 overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead class="text-xs text-[var(--text-muted)] uppercase sticky top-0 bg-[var(--bg-secondary)]">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Date</th>
+                                <th class="px-4 py-2 text-left" data-i18n="table.price">Price</th>
+                                <th class="px-4 py-2 text-left">Change</th>
+                            </tr>
+                        </thead>
+                        <tbody id="priceHistoryTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Files -->
-    <script src="/static/js/core.js"></script>
-    <script src="/static/js/dashboard.js"></script>
-    <script src="/static/js/orders.js"></script>
-    <script src="/static/js/watcher.js"></script>
-    <script src="/static/js/tracking.js"></script>
-    <script src="/static/js/listings.js"></script>
-    <script src="/static/js/statistics.js"></script>
-    <script src="/static/js/settings.js"></script>
-    <script src="/static/js/notifications.js"></script>
-    <script src="/static/js/app.js"></script>
+    <!-- ========== ORDER DETAIL PANEL ========== -->
+    <div id="orderDetailPanel" class="order-detail-panel">
+        <div class="order-detail-header">
+            <h3 id="orderDetailTitle" class="font-semibold truncate"></h3>
+            <div class="flex items-center gap-2">
+                <a id="orderDetailLink" href="#" target="_blank" class="btn btn-ghost btn-icon btn-sm">
+                    <i class="fas fa-external-link-alt"></i>
+                </a>
+                <button onclick="app.closeOrderDetail()" class="btn btn-ghost btn-icon btn-sm">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="order-detail-body" id="orderDetailBody"></div>
+        <div class="order-detail-footer">
+            <button onclick="app.deleteOrderFromDetail()" class="btn btn-danger btn-sm">
+                <i class="fas fa-trash"></i>
+                <span data-i18n="detail.deleteOrder">Delete</span>
+            </button>
+            <button onclick="app.saveOrderDetail()" class="btn btn-primary btn-sm">
+                <i class="fas fa-save"></i>
+                <span data-i18n="detail.saveChanges">Save Changes</span>
+            </button>
+        </div>
+    </div>
+    <div id="orderDetailBackdrop" class="order-detail-backdrop" onclick="app.closeOrderDetail()"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="card p-8 text-center" style="max-width: 280px;">
+            <div class="spinner mx-auto mb-4"></div>
+            <h3 class="text-base font-semibold mb-1" data-i18n="loading.title">Loading...</h3>
+            <p id="loadingText" class="text-sm text-[var(--text-muted)]"></p>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <i id="toastIcon" class="fas"></i>
+        <span id="toastText"></span>
+    </div>
+
+</div><!-- /app -->
+
+<!-- JavaScript -->
+<script src="/static/js/core.js"></script>
+<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/orders.js"></script>
+<script src="/static/js/watcher.js"></script>
+<script src="/static/js/tracking.js"></script>
+<script src="/static/js/listings.js"></script>
+<script src="/static/js/statistics.js"></script>
+<script src="/static/js/settings.js"></script>
+<script src="/static/js/notifications.js"></script>
+<script src="/static/js/app.js"></script>
 </body>
 </html>

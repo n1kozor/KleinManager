@@ -1,36 +1,25 @@
-// Settings functionality with auto-monitoring controls
-class SettingsManager extends KleinManagerCore {
+// Settings Manager
+class SettingsManager {
+    constructor(app) {
+        this.app = app;
+    }
+
     updateSettingsUI() {
-        const notificationsEnabled = document.getElementById('notifications-enabled');
-        const notificationSound = document.getElementById('notification-sound');
-        const autoCheckEnabled = document.getElementById('auto-check-enabled');
-        const autoCheckInterval = document.getElementById('auto-check-interval');
-        const autoTrackingEnabled = document.getElementById('auto-tracking-enabled');
-        const autoTrackingInterval = document.getElementById('auto-tracking-interval');
+        const get = id => document.getElementById(id);
 
-        if (notificationsEnabled) {
-            notificationsEnabled.checked = this.settings.notifications_enabled;
-        }
+        const notifEnabled = get('notifications-enabled');
+        const notifSound = get('notification-sound');
+        const autoCheck = get('auto-check-enabled');
+        const autoCheckInt = get('auto-check-interval');
+        const autoTrack = get('auto-tracking-enabled');
+        const autoTrackInt = get('auto-tracking-interval');
 
-        if (notificationSound) {
-            notificationSound.value = this.settings.notification_sound || 'default';
-        }
-
-        if (autoCheckEnabled) {
-            autoCheckEnabled.checked = this.settings.auto_check_enabled !== false;
-        }
-
-        if (autoCheckInterval) {
-            autoCheckInterval.value = this.settings.auto_check_interval || 60;
-        }
-
-        if (autoTrackingEnabled) {
-            autoTrackingEnabled.checked = this.settings.auto_tracking_enabled !== false;
-        }
-
-        if (autoTrackingInterval) {
-            autoTrackingInterval.value = this.settings.auto_tracking_interval || 30;
-        }
+        if (notifEnabled) notifEnabled.checked = this.app.settings.notifications_enabled;
+        if (notifSound) notifSound.value = this.app.settings.notification_sound || 'default';
+        if (autoCheck) autoCheck.checked = this.app.settings.auto_check_enabled !== false;
+        if (autoCheckInt) autoCheckInt.value = this.app.settings.auto_check_interval || 60;
+        if (autoTrack) autoTrack.checked = this.app.settings.auto_tracking_enabled !== false;
+        if (autoTrackInt) autoTrackInt.value = this.app.settings.auto_tracking_interval || 30;
 
         this.renderColorSettings();
         this.updateBackgroundTaskStatus();
@@ -38,155 +27,112 @@ class SettingsManager extends KleinManagerCore {
 
     async updateBackgroundTaskStatus() {
         try {
-            const status = await this.apiRequest('/background-tasks/status');
+            const status = await this.app.apiRequest('/background-tasks/status');
 
-            const priceStatus = document.getElementById('price-monitoring-status');
-            const trackingStatus = document.getElementById('tracking-monitoring-status');
-            const lastPriceCheck = document.getElementById('last-price-check');
-            const lastTrackingCheck = document.getElementById('last-tracking-check');
+            const priceEl = document.getElementById('price-monitoring-status');
+            const trackEl = document.getElementById('tracking-monitoring-status');
+            const lastPrice = document.getElementById('last-price-check');
+            const lastTrack = document.getElementById('last-tracking-check');
 
-            if (priceStatus) {
-                priceStatus.textContent = status.price_monitoring_active ? '✅ Active' : '❌ Inactive';
-                priceStatus.className = status.price_monitoring_active ? 'text-green-400' : 'text-red-400';
+            if (priceEl) {
+                priceEl.textContent = status.price_monitoring_active ? this.app.t('settings.active') : this.app.t('settings.inactive');
+                priceEl.className = 'font-medium ' + (status.price_monitoring_active ? 'text-emerald-400' : 'text-red-400');
             }
-
-            if (trackingStatus) {
-                trackingStatus.textContent = status.tracking_monitoring_active ? '✅ Active' : '❌ Inactive';
-                trackingStatus.className = status.tracking_monitoring_active ? 'text-green-400' : 'text-red-400';
+            if (trackEl) {
+                trackEl.textContent = status.tracking_monitoring_active ? this.app.t('settings.active') : this.app.t('settings.inactive');
+                trackEl.className = 'font-medium ' + (status.tracking_monitoring_active ? 'text-emerald-400' : 'text-red-400');
             }
-
-            if (lastPriceCheck) {
-                lastPriceCheck.textContent = status.last_price_check ?
-                    new Date(status.last_price_check).toLocaleString() : 'Never';
-            }
-
-            if (lastTrackingCheck) {
-                lastTrackingCheck.textContent = status.last_tracking_check ?
-                    new Date(status.last_tracking_check).toLocaleString() : 'Never';
-            }
-
-        } catch (error) {
-            console.error('Failed to update background task status:', error);
+            if (lastPrice) lastPrice.textContent = status.last_price_check ? new Date(status.last_price_check).toLocaleString(this.app.currentLang === 'de' ? 'de-DE' : 'en') : this.app.t('settings.never');
+            if (lastTrack) lastTrack.textContent = status.last_tracking_check ? new Date(status.last_tracking_check).toLocaleString(this.app.currentLang === 'de' ? 'de-DE' : 'en') : this.app.t('settings.never');
+        } catch {
+            console.error('Failed to get task status');
         }
     }
 
     renderColorSettings() {
         const container = document.getElementById('color-settings');
-        if (!container || !this.settings.colors) return;
+        if (!container || !this.app.settings.colors) return;
 
-        container.innerHTML = this.settings.colors.map((color, index) => `
-            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                <div class="flex items-center gap-3">
-                    <div class="w-6 h-6 rounded-full border border-gray-500" style="background-color: ${color.value}"></div>
-                    <input type="text" value="${color.name}"
-                           onchange="app.updateColorName(${index}, event.target.value)"
-                           class="bg-transparent text-white border-none focus:outline-none">
-                </div>
-                <button onclick="app.removeColor(${index})"
-                        class="text-red-400 hover:text-red-300">
-                    <i class="fas fa-trash"></i>
-                </button>
+        container.innerHTML = this.app.settings.colors.map((color, i) => `
+            <div class="flex items-center gap-3 p-2 rounded-lg bg-[var(--bg-secondary)]">
+                <div class="w-6 h-6 rounded-md flex-shrink-0" style="background:${color.value}"></div>
+                <input type="text" value="${color.name}" onchange="app.updateColorName(${i}, this.value)"
+                       class="input flex-1" style="padding: 4px 8px; font-size: 0.8125rem;">
+                <button onclick="app.removeColor(${i})" class="btn btn-ghost btn-icon btn-sm" style="color:var(--accent-red);"><i class="fas fa-trash text-xs"></i></button>
             </div>
         `).join('');
     }
 
     updateColorName(index, name) {
-        if (this.settings.colors && this.settings.colors[index]) {
-            this.settings.colors[index].name = name;
+        if (this.app.settings.colors?.[index]) {
+            this.app.settings.colors[index].name = name;
         }
     }
 
     removeColor(index) {
-        if (this.settings.colors) {
-            this.settings.colors.splice(index, 1);
+        if (this.app.settings.colors) {
+            this.app.settings.colors.splice(index, 1);
             this.renderColorSettings();
         }
     }
 
     addNewColor() {
-        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd'];
-        const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
-        if (!this.settings.colors) {
-            this.settings.colors = [];
-        }
-
-        this.settings.colors.push({
-            name: `Color ${this.settings.colors.length + 1}`,
-            value: randomColor
-        });
-
+        const palette = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd', '#74b9ff', '#a29bfe'];
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        if (!this.app.settings.colors) this.app.settings.colors = [];
+        this.app.settings.colors.push({ name: this.app.t('settings.newColor', { num: this.app.settings.colors.length + 1 }), value: color });
         this.renderColorSettings();
     }
 
     async saveSettings() {
-        const notificationsEnabled = document.getElementById('notifications-enabled')?.checked || false;
-        const notificationSound = document.getElementById('notification-sound')?.value || 'default';
-        const autoCheckEnabled = document.getElementById('auto-check-enabled')?.checked || false;
-        const autoCheckInterval = parseInt(document.getElementById('auto-check-interval')?.value) || 60;
-        const autoTrackingEnabled = document.getElementById('auto-tracking-enabled')?.checked || false;
-        const autoTrackingInterval = parseInt(document.getElementById('auto-tracking-interval')?.value) || 30;
-
-        const settingsData = {
-            colors: this.settings.colors || [],
-            notifications_enabled: notificationsEnabled,
-            notification_sound: notificationSound,
-            auto_check_enabled: autoCheckEnabled,
-            auto_check_interval: autoCheckInterval,
-            auto_tracking_enabled: autoTrackingEnabled,
-            auto_tracking_interval: autoTrackingInterval
+        const data = {
+            colors: this.app.settings.colors || [],
+            notifications_enabled: document.getElementById('notifications-enabled')?.checked || false,
+            notification_sound: document.getElementById('notification-sound')?.value || 'default',
+            auto_check_enabled: document.getElementById('auto-check-enabled')?.checked || false,
+            auto_check_interval: parseInt(document.getElementById('auto-check-interval')?.value) || 60,
+            auto_tracking_enabled: document.getElementById('auto-tracking-enabled')?.checked || false,
+            auto_tracking_interval: parseInt(document.getElementById('auto-tracking-interval')?.value) || 30
         };
 
-        this.showLoading('Saving settings and restarting background tasks...');
-
+        this.app.showLoading(this.app.t('loading.savingSettings'));
         try {
-            await this.apiRequest('/settings', {
-                method: 'PUT',
-                body: JSON.stringify(settingsData)
-            });
-
-            this.settings = { ...this.settings, ...settingsData };
-            this.updateColorFilters();
-            this.updateEditColorOptions();
-            this.initNotificationSound();
-
-            this.hideLoading();
-            this.showToast('Settings saved successfully', 'success');
-
-            // Wait a bit then update status
-            setTimeout(() => {
-                this.updateBackgroundTaskStatus();
-            }, 2000);
-
-        } catch (error) {
-            this.hideLoading();
-            this.showToast('Failed to save settings', 'error');
+            await this.app.apiRequest('/settings', { method: 'PUT', body: JSON.stringify(data) });
+            this.app.settings = { ...this.app.settings, ...data };
+            this.app.updateColorFilters();
+            this.app.updateEditColorOptions();
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('toast.settingsSaved'), 'success');
+            setTimeout(() => this.updateBackgroundTaskStatus(), 2000);
+        } catch {
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('error.saveSettings'), 'error');
         }
     }
 
     async startBackgroundTasks() {
-        this.showLoading('Starting background monitoring...');
+        this.app.showLoading(this.app.t('loading.startingMonitoring'));
         try {
-            await this.apiRequest('/background-tasks/start', { method: 'POST' });
-            this.hideLoading();
-            this.showToast('Background monitoring started', 'success');
+            await this.app.apiRequest('/background-tasks/start', { method: 'POST' });
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('toast.monitoringStarted'), 'success');
             this.updateBackgroundTaskStatus();
-        } catch (error) {
-            this.hideLoading();
-            this.showToast('Failed to start background monitoring', 'error');
+        } catch {
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('error.startFailed'), 'error');
         }
     }
 
     async stopBackgroundTasks() {
-        this.showLoading('Stopping background monitoring...');
+        this.app.showLoading(this.app.t('loading.stoppingMonitoring'));
         try {
-            await this.apiRequest('/background-tasks/stop', { method: 'POST' });
-            this.hideLoading();
-            this.showToast('Background monitoring stopped', 'success');
+            await this.app.apiRequest('/background-tasks/stop', { method: 'POST' });
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('toast.monitoringStopped'), 'success');
             this.updateBackgroundTaskStatus();
-        } catch (error) {
-            this.hideLoading();
-            this.showToast('Failed to stop background monitoring', 'error');
+        } catch {
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('error.stopFailed'), 'error');
         }
     }
 }

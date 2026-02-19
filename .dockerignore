@@ -5,5 +5,14 @@ __pycache__/
 *.db
 *.log
 .env
+.venv/
+.idea/
+.git/
+.gitignore
 build/
 dist/
+tests/
+images/
+*.spec
+*.md
+LICENSE

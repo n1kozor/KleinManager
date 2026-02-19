@@ -58,6 +58,11 @@ async def get_orders(
         search: Optional[str] = "",
         status: Optional[str] = "",
         color: Optional[str] = "",
+        seller: Optional[str] = "",
+        priceMin: Optional[float] = None,
+        priceMax: Optional[float] = None,
+        sort: Optional[str] = "created_at",
+        order: Optional[str] = "desc",
         limit: int = 100,
         db: Session = Depends(get_db)
 ):
@@ -70,8 +75,20 @@ async def get_orders(
         query = query.filter(Order.status == status)
     if color:
         query = query.filter(Order.color == color)
+    if seller:
+        query = query.filter(Order.seller_name == seller)
+    if priceMin is not None:
+        query = query.filter(Order.price >= priceMin)
+    if priceMax is not None:
+        query = query.filter(Order.price <= priceMax)
 
-    orders = query.order_by(Order.created_at.desc()).limit(limit).all()
+    sort_column = getattr(Order, sort, Order.created_at)
+    if order == "asc":
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+
+    orders = query.limit(limit).all()
 
     for order in orders:
         if not order.tracking_details and order.dhl_details:
@@ -211,7 +228,7 @@ async def update_all_tracking(db: Session = Depends(get_db)):
             elif 'error' not in tracking_data and order.status == 'Ordered':
                 order.status = 'Shipped'
 
-            time.sleep(1)
+            await asyncio.sleep(1)
         except Exception:
             continue
 
@@ -328,7 +345,7 @@ async def check_all_prices(db: Session = Depends(get_db)):
             result = price_watcher.check_price_change(item, db)
             if result:
                 updates.append(result)
-            time.sleep(2)
+            await asyncio.sleep(2)
         except Exception:
             continue
 

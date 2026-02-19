@@ -1,20 +1,10 @@
-// Orders management functionality - Completely redesigned
-class OrdersManager extends KleinManagerCore {
-    constructor() {
-        super();
-        this.selectedOrderForColor = null;
-        this.selectedColor = undefined;
-        this.activeFilters = {
-            search: '',
-            status: '',
-            color: '',
-            seller: '',
-            priceMin: '',
-            priceMax: ''
-        };
+// Orders Manager
+class OrdersManager {
+    constructor(app) {
+        this.app = app;
+        this._currentDetailOrder = null;
     }
 
-    // Order Forms
     showAddOrderForm() {
         document.getElementById('addOrderForm').classList.remove('hidden');
         document.getElementById('orderUrl').focus();
@@ -27,8 +17,7 @@ class OrdersManager extends KleinManagerCore {
 
     async loadOrders() {
         try {
-            // Collect all filter values
-            this.activeFilters = {
+            const filters = {
                 search: document.getElementById('searchInput')?.value || '',
                 status: document.getElementById('statusFilter')?.value || '',
                 color: document.getElementById('colorFilter')?.value || '',
@@ -38,513 +27,572 @@ class OrdersManager extends KleinManagerCore {
             };
 
             let url = '/orders?';
-            Object.entries(this.activeFilters).forEach(([key, value]) => {
-                if (value) url += `${key}=${encodeURIComponent(value)}&`;
-            });
+            Object.entries(filters).forEach(([k, v]) => { if (v) url += `${k}=${encodeURIComponent(v)}&`; });
 
-            const orders = await this.apiRequest(url);
+            const orders = await this.app.apiRequest(url);
             const container = document.getElementById('orders-list');
 
-            if (orders.length === 0) {
-                container.innerHTML = this.renderEmptyState();
+            if (!orders.length) {
+                container.innerHTML = `
+                    <div class="empty-state card">
+                        <i class="fas fa-search"></i>
+                        <h3>${this.app.t('orders.noOrdersFound')}</h3>
+                        <p>${this.app.t('orders.noOrdersDesc')}</p>
+                        <button onclick="app.showAddOrderForm()" class="btn btn-primary"><i class="fas fa-plus"></i> ${this.app.t('actions.addOrder')}</button>
+                    </div>`;
+                container.className = '';
             } else {
-                this.renderOrdersWithCurrentView(orders, container);
+                this._renderOrders(orders, container);
             }
 
-            // Update stats
-            this.updateOrderStats(orders);
+            this._updateStats(orders);
+            this._updateSellerFilter(orders);
         } catch (error) {
-            this.showToast('Failed to load orders', 'error');
+            this.app.showToast(this.app.t('error.loadOrders'), 'error');
         }
     }
 
-    renderEmptyState() {
-        return `
-            <div class="col-span-full bg-gray-800 rounded-2xl p-12 text-center border border-gray-700">
-                <div class="mb-6">
-                    <i class="fas fa-search text-6xl text-gray-600 mb-4"></i>
-                    <h3 class="text-xl font-semibold text-white mb-2">No Orders Found</h3>
-                    <p class="text-gray-400">Try adjusting your filters or add a new order</p>
-                </div>
-                <button onclick="app.showAddOrderForm()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg">
-                    <i class="fas fa-plus mr-2"></i>Add Your First Order
-                </button>
-            </div>
-        `;
-    }
-
-    renderOrdersWithCurrentView(orders, container) {
-        if (this.viewMode === 'grid') {
-            container.className = 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6';
-            container.innerHTML = orders.map(order => this.renderCompactOrderCard(order)).join('');
-        } else if (this.viewMode === 'list') {
+    _renderOrders(orders, container) {
+        const mode = this.app.viewMode;
+        if (mode === 'grid') {
+            container.className = 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4';
+            container.innerHTML = orders.map(o => this._cardView(o)).join('');
+        } else if (mode === 'list') {
             container.className = 'space-y-3';
-            container.innerHTML = orders.map(order => this.renderDetailedListItem(order)).join('');
+            container.innerHTML = orders.map(o => this._listView(o)).join('');
         } else {
-            // Table view
-            container.className = 'overflow-hidden bg-gray-800 rounded-2xl border border-gray-700';
-            container.innerHTML = this.renderOrdersTable(orders);
+            container.className = 'card overflow-hidden';
+            container.innerHTML = this._tableView(orders);
         }
     }
 
-    updateOrderStats(orders) {
-        const statsContainer = document.getElementById('order-stats');
-        if (!statsContainer) return;
-
-        const stats = {
+    _updateStats(orders) {
+        const el = document.getElementById('order-stats');
+        if (!el) return;
+        const s = {
             total: orders.length,
             ordered: orders.filter(o => o.status === 'Ordered').length,
             shipped: orders.filter(o => o.status === 'Shipped').length,
             delivered: orders.filter(o => o.status === 'Delivered').length,
-            totalValue: orders.reduce((sum, o) => sum + (o.price || 0), 0),
+            value: orders.reduce((sum, o) => sum + (o.price || 0), 0),
             newSellers: orders.filter(o => o.seller_is_new).length
         };
-
-        statsContainer.innerHTML = `
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                <div class="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border border-blue-500/30 rounded-xl p-4 text-center">
-                    <div class="text-2xl font-bold text-blue-400">${stats.total}</div>
-                    <div class="text-xs text-blue-300 mt-1">Total</div>
-                </div>
-                <div class="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 border border-yellow-500/30 rounded-xl p-4 text-center">
-                    <div class="text-2xl font-bold text-yellow-400">${stats.ordered}</div>
-                    <div class="text-xs text-yellow-300 mt-1">Ordered</div>
-                </div>
-                <div class="bg-gradient-to-br from-orange-600/20 to-orange-800/20 border border-orange-500/30 rounded-xl p-4 text-center">
-                    <div class="text-2xl font-bold text-orange-400">${stats.shipped}</div>
-                    <div class="text-xs text-orange-300 mt-1">Shipped</div>
-                </div>
-                <div class="bg-gradient-to-br from-green-600/20 to-green-800/20 border border-green-500/30 rounded-xl p-4 text-center">
-                    <div class="text-2xl font-bold text-green-400">${stats.delivered}</div>
-                    <div class="text-xs text-green-300 mt-1">Delivered</div>
-                </div>
-                <div class="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border border-purple-500/30 rounded-xl p-4 text-center">
-                    <div class="text-2xl font-bold text-purple-400">€${stats.totalValue.toFixed(0)}</div>
-                    <div class="text-xs text-purple-300 mt-1">Value</div>
-                </div>
-                <div class="bg-gradient-to-br from-red-600/20 to-red-800/20 border border-red-500/30 rounded-xl p-4 text-center">
-                    <div class="text-2xl font-bold text-red-400">${stats.newSellers}</div>
-                    <div class="text-xs text-red-300 mt-1">New Sellers</div>
-                </div>
-            </div>
-        `;
+        el.innerHTML = `
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 stagger-children">
+                <div class="stat-card blue"><div class="stat-value text-blue-400 text-xl">${s.total}</div><div class="stat-label">${this.app.t('orders.total')}</div></div>
+                <div class="stat-card yellow"><div class="stat-value text-yellow-400 text-xl">${s.ordered}</div><div class="stat-label">${this.app.t('orders.ordered')}</div></div>
+                <div class="stat-card orange"><div class="stat-value text-orange-400 text-xl">${s.shipped}</div><div class="stat-label">${this.app.t('orders.shipped')}</div></div>
+                <div class="stat-card green"><div class="stat-value text-emerald-400 text-xl">${s.delivered}</div><div class="stat-label">${this.app.t('orders.delivered')}</div></div>
+                <div class="stat-card purple"><div class="stat-value text-purple-400 text-xl">€${s.value.toFixed(0)}</div><div class="stat-label">${this.app.t('orders.value')}</div></div>
+                <div class="stat-card red"><div class="stat-value text-red-400 text-xl">${s.newSellers}</div><div class="stat-label">${this.app.t('orders.newSellers')}</div></div>
+            </div>`;
     }
 
-    renderCompactOrderCard(order) {
-        const images = order.local_images ? JSON.parse(order.local_images) : [];
-        const trackingData = order.tracking_details ? JSON.parse(order.tracking_details) : null;
+    _updateSellerFilter(orders) {
+        const sel = document.getElementById('sellerFilter');
+        if (!sel) return;
+        const currentVal = sel.value;
+        const sellers = [...new Set(orders.map(o => o.seller_name).filter(Boolean))].sort();
+        sel.innerHTML = `<option value="">${this.app.t('orders.allSellers')}</option>`;
+        sellers.forEach(s => { sel.innerHTML += `<option value="${s}">${s}</option>`; });
+        sel.value = currentVal;
+    }
+
+    // ---- Card/List/Table Views ----
+
+    _cardView(order) {
+        const images = this.app.safeJsonParse(order.local_images, []);
+        const tracking = this.app.safeJsonParse(order.tracking_details, null);
+        const na = this.app.t('orders.na');
 
         return `
-            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 hover:border-gray-600 hover:shadow-xl transition-all duration-300 group overflow-hidden" data-order-id="${order.id}">
-                <!-- Header with Color and Status -->
-                <div class="relative">
-                    ${images.length > 0
-                        ? `<div class="relative overflow-hidden">
-                             <img src="/images/${images[0]}" class="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer" onclick="window.open('/images/${images[0]}', '_blank')">
-                             <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                           </div>`
-                        : `<div class="w-full h-32 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                             <i class="fas fa-image text-gray-500 text-2xl"></i>
-                           </div>`
-                    }
-
-                    <!-- Status Badge -->
-                    <div class="absolute top-3 right-3">
-                        <span class="px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${this.getStatusClass(order.status)}">
-                            ${this.getStatusIcon(order.status)} ${this.t(`status.${order.status.toLowerCase()}`)}
-                        </span>
-                    </div>
-
-                    <!-- Color Indicator -->
-                    ${order.color ? `
-                        <div class="absolute top-3 left-3 w-4 h-4 rounded-full border-2 border-white shadow-lg" style="background-color: ${order.color}"></div>
-                    ` : ''}
-
-                    <!-- Price Badge -->
-                    <div class="absolute -bottom-4 left-4">
-                        <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-xl font-bold text-lg shadow-lg">
-                            €${order.price.toFixed(2)}
-                        </div>
+            <div class="order-card" data-order-id="${order.id}">
+                <div class="relative cursor-pointer" onclick="app.openOrderDetail(${order.id})">
+                    ${images.length
+                        ? `<img src="/images/${images[0]}" class="order-card-image">`
+                        : `<div class="order-card-placeholder"><i class="fas fa-image"></i></div>`}
+                    <div class="absolute top-2 right-2"><span class="badge ${this.app.getStatusClass(order.status)}"><i class="fas ${this.app.getStatusIcon(order.status)}"></i> ${this.app.t('status.' + order.status.toLowerCase())}</span></div>
+                    ${order.color ? `<div class="absolute top-2 left-2 color-dot" style="background:${order.color}"></div>` : ''}
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
+                        <span class="order-card-price">€${order.price.toFixed(2)}</span>
                     </div>
                 </div>
-
-                <!-- Content -->
-                <div class="p-4 pt-6">
-                    <h3 class="text-white font-semibold text-sm mb-3 line-clamp-2 leading-tight">${order.title}</h3>
-
-                    <!-- Info Grid -->
-                    <div class="grid grid-cols-2 gap-2 mb-3 text-xs">
-                        <div class="text-gray-400 flex items-center">
-                            <i class="fas fa-tag mr-2 w-3 text-center"></i>
-                            <span class="truncate">${order.category || 'N/A'}</span>
-                        </div>
-                        <div class="text-gray-400 flex items-center">
-                            <i class="fas fa-map-marker-alt mr-2 w-3 text-center"></i>
-                            <span class="truncate">${order.location || 'N/A'}</span>
-                        </div>
-                        <div class="text-gray-400 flex items-center col-span-2">
-                            <i class="fas fa-user mr-2 w-3 text-center"></i>
-                            <span class="truncate">${order.seller_name || 'N/A'}</span>
-                            ${order.seller_is_new ? '<span class="ml-2 text-red-400 text-xs">⚠️ NEW</span>' : ''}
+                <div class="order-card-body cursor-pointer" onclick="app.openOrderDetail(${order.id})">
+                    <div class="order-card-title">${order.title}</div>
+                    <div class="space-y-1 mb-3">
+                        <div class="order-card-meta"><i class="fas fa-tag w-3"></i><span class="truncate">${order.category || na}</span></div>
+                        <div class="order-card-meta"><i class="fas fa-map-marker-alt w-3"></i><span class="truncate">${order.location || na}</span></div>
+                        <div class="order-card-meta"><i class="fas fa-user w-3"></i><span class="truncate">${order.seller_name || na}</span>
+                            ${order.seller_is_new ? `<span class="badge badge-new-seller ml-1" style="font-size:0.6rem;padding:1px 5px;">${this.app.t('orders.new')}</span>` : ''}
                         </div>
                     </div>
-
-                    <!-- Tracking Info -->
-                    ${order.tracking_number && trackingData && !trackingData.error ? `
-                        <div class="mb-3 p-2 bg-gradient-to-r from-blue-900/30 to-indigo-900/30 rounded-xl border border-blue-500/30">
-                            <div class="flex items-center justify-between text-xs mb-2">
-                                <span class="text-blue-300 font-medium">
-                                    <i class="fas fa-truck mr-1"></i>${trackingData.carrier}
-                                </span>
-                                <span class="text-blue-400 font-bold">${trackingData.progress || 0}%</span>
+                    ${tracking && !tracking.error ? `
+                        <div class="p-2 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-blue-400 font-medium"><i class="fas fa-truck mr-1"></i>${tracking.carrier}</span>
+                                <span class="text-blue-400 font-bold">${tracking.progress || 0}%</span>
                             </div>
-                            <div class="w-full bg-gray-700 rounded-full h-1.5">
-                                <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: ${trackingData.progress || 0}%"></div>
-                            </div>
-                            <div class="text-xs text-gray-400 mt-1 truncate">${trackingData.status || 'No status available'}</div>
-                        </div>
-                    ` : ''}
-
-                    <!-- Action Buttons -->
-                    <div class="flex gap-1.5">
-                        <button onclick="app.editOrder(${order.id})" class="flex-1 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-xs transition-colors" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="app.showColorPicker(${order.id})" class="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs transition-colors" title="Color">
-                            <i class="fas fa-palette"></i>
-                        </button>
-                        ${!order.tracking_number ? `
-                            <button onclick="app.showTrackingModal(${order.id})" class="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs transition-colors" title="Add Tracking">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        ` : `
-                            <button onclick="app.updateTracking(${order.id})" class="flex-1 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-xs transition-colors" title="Update">
-                                <i class="fas fa-sync"></i>
-                            </button>
-                        `}
-                        <a href="${order.article_url}" target="_blank" class="flex-1 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-xs text-center transition-colors" title="View">
-                            <i class="fas fa-external-link-alt"></i>
-                        </a>
-                        <button onclick="app.deleteOrder(${order.id})" class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs transition-colors" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                            <div class="progress-bar" style="height:4px;"><div class="progress-bar-fill" style="width:${tracking.progress || 0}%"></div></div>
+                        </div>` : ''}
                 </div>
-            </div>
-        `;
+                <div class="order-card-actions">
+                    <button onclick="app.openOrderDetail(${order.id})" class="btn btn-ghost btn-sm flex-1" title="${this.app.t('actions.edit')}">
+                        <i class="fas fa-pen-to-square"></i> ${this.app.t('actions.details')}
+                    </button>
+                    <a href="${order.article_url}" target="_blank" class="btn btn-ghost btn-sm" title="${this.app.t('actions.view')}" onclick="event.stopPropagation()">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
+            </div>`;
     }
 
-    renderDetailedListItem(order) {
-        const images = order.local_images ? JSON.parse(order.local_images) : [];
-        const trackingData = order.tracking_details ? JSON.parse(order.tracking_details) : null;
+    _listView(order) {
+        const images = this.app.safeJsonParse(order.local_images, []);
+        const tracking = this.app.safeJsonParse(order.tracking_details, null);
+        const na = this.app.t('orders.na');
 
         return `
-            <div class="bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-700 hover:border-gray-600 hover:shadow-xl transition-all duration-300" data-order-id="${order.id}">
-                <div class="flex gap-4">
-                    <!-- Image -->
-                    <div class="w-20 h-20 flex-shrink-0 relative">
-                        ${order.color ? `
-                            <div class="absolute -top-1 -left-1 w-3 h-3 rounded-full border-2 border-white shadow-lg z-10" style="background-color: ${order.color}"></div>
-                        ` : ''}
-                        ${images.length > 0
-                            ? `<img src="/images/${images[0]}" class="w-full h-full object-cover rounded-xl cursor-pointer hover:scale-105 transition-transform" onclick="window.open('/images/${images[0]}', '_blank')">`
-                            : `<div class="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center">
-                                 <i class="fas fa-image text-gray-500"></i>
-                               </div>`
-                        }
-                    </div>
-
-                    <!-- Main Content -->
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start mb-2">
-                            <h3 class="text-lg font-semibold text-white truncate pr-4">${order.title}</h3>
-                            <div class="flex items-center gap-3">
-                                <span class="text-xl font-bold text-blue-400">€${order.price.toFixed(2)}</span>
-                                <span class="px-3 py-1 rounded-full text-xs font-medium ${this.getStatusClass(order.status)} whitespace-nowrap">
-                                    ${this.getStatusIcon(order.status)} ${this.t(`status.${order.status.toLowerCase()}`)}
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Info Row -->
-                        <div class="flex items-center gap-6 text-sm text-gray-400 mb-3">
-                            <span class="flex items-center">
-                                <i class="fas fa-tag mr-2 w-4 text-center"></i>
-                                ${order.category || 'N/A'}
-                            </span>
-                            <span class="flex items-center">
-                                <i class="fas fa-map-marker-alt mr-2 w-4 text-center"></i>
-                                ${order.location || 'N/A'}
-                            </span>
-                            <span class="flex items-center">
-                                <i class="fas fa-user mr-2 w-4 text-center"></i>
-                                ${order.seller_name || 'N/A'}
-                                ${order.seller_is_new ? '<span class="ml-2 text-red-400 text-xs">⚠️ NEW SELLER</span>' : ''}
-                            </span>
-                        </div>
-
-                        <!-- Tracking Section -->
-                        ${order.tracking_number && trackingData && !trackingData.error ? `
-                            <div class="mb-3">
-                                <button onclick="app.toggleTrackingDetails(${order.id})" class="w-full p-3 bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-500/30 rounded-xl hover:from-blue-900/50 hover:to-indigo-900/50 transition-all">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-blue-300 font-medium">
-                                            <i class="fas fa-truck mr-2"></i>${trackingData.carrier}: ${order.tracking_number}
-                                        </span>
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-blue-400 font-bold">${trackingData.progress || 0}%</span>
-                                            <i id="tracking-icon-${order.id}" class="fas fa-chevron-down text-blue-400"></i>
-                                        </div>
-                                    </div>
-                                    <div class="w-full bg-gray-700 rounded-full h-2 mb-2">
-                                        <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500" style="width: ${trackingData.progress || 0}%"></div>
-                                    </div>
-                                    <div class="text-sm text-gray-300">${trackingData.status || 'No status available'}</div>
-                                </button>
-
-                                <div id="tracking-details-${order.id}" class="hidden mt-3 p-4 bg-gray-900 rounded-xl border border-gray-600">
-                                    <h4 class="text-white font-medium mb-3">Tracking History</h4>
-                                    ${trackingData.history && trackingData.history.length > 0 ? `
-                                        <div class="space-y-3">
-                                            ${trackingData.history.map(event => `
-                                                <div class="flex items-start gap-3 p-3 bg-gray-800 rounded-lg">
-                                                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                                                    <div class="flex-1">
-                                                        <div class="text-sm text-gray-400 mb-1">${event.time}</div>
-                                                        <div class="text-gray-300">${event.text}</div>
-                                                        ${event.location ? `<div class="text-xs text-gray-500 mt-1">${event.location}</div>` : ''}
-                                                    </div>
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    ` : '<div class="text-gray-400 text-center py-4">No tracking history available</div>'}
-                                </div>
-                            </div>
-                        ` : ''}
-
-                        <!-- Action Buttons -->
-                        <div class="flex gap-2">
-                            <button onclick="app.editOrder(${order.id})" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
-                                <i class="fas fa-edit mr-1"></i>Edit
-                            </button>
-                            <button onclick="app.showColorPicker(${order.id})" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors">
-                                <i class="fas fa-palette mr-1"></i>Color
-                            </button>
-                            ${!order.tracking_number ? `
-                                <button onclick="app.showTrackingModal(${order.id})" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors">
-                                    <i class="fas fa-plus mr-1"></i>Add Tracking
-                                </button>
-                            ` : `
-                                <button onclick="app.updateTracking(${order.id})" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm transition-colors">
-                                    <i class="fas fa-sync mr-1"></i>Update
-                                </button>
-                            `}
-                            <a href="${order.article_url}" target="_blank" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors">
-                                <i class="fas fa-external-link-alt mr-1"></i>View
-                            </a>
-                            <button onclick="app.deleteOrder(${order.id})" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors">
-                                <i class="fas fa-trash mr-1"></i>Delete
-                            </button>
-                        </div>
-                    </div>
+            <div class="card p-4 flex gap-4 cursor-pointer hover:border-[var(--border-hover)] transition-colors" data-order-id="${order.id}" onclick="app.openOrderDetail(${order.id})">
+                <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 relative">
+                    ${order.color ? `<div class="absolute -top-1 -left-1 color-dot z-10" style="background:${order.color}"></div>` : ''}
+                    ${images.length
+                        ? `<img src="/images/${images[0]}" class="w-full h-full object-cover">`
+                        : `<div class="w-full h-full bg-[var(--bg-secondary)] flex items-center justify-center"><i class="fas fa-image text-[var(--text-muted)]"></i></div>`}
                 </div>
-            </div>
-        `;
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-start mb-1">
+                        <h3 class="font-medium truncate pr-4">${order.title}</h3>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <span class="text-lg font-bold text-blue-400">€${order.price.toFixed(2)}</span>
+                            <span class="badge ${this.app.getStatusClass(order.status)}"><i class="fas ${this.app.getStatusIcon(order.status)}"></i> ${this.app.t('status.' + order.status.toLowerCase())}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-[var(--text-muted)] mb-2">
+                        <span><i class="fas fa-tag mr-1"></i>${order.category || na}</span>
+                        <span><i class="fas fa-map-marker-alt mr-1"></i>${order.location || na}</span>
+                        <span><i class="fas fa-user mr-1"></i>${order.seller_name || na}${order.seller_is_new ? ` <span class="badge badge-new-seller" style="font-size:0.6rem;padding:1px 5px;">${this.app.t('orders.new')}</span>` : ''}</span>
+                    </div>
+                    ${tracking && !tracking.error ? `
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-blue-400"><i class="fas fa-truck mr-1"></i>${tracking.carrier}: ${order.tracking_number}</span>
+                            <div class="progress-bar flex-1" style="height:4px;max-width:120px;"><div class="progress-bar-fill" style="width:${tracking.progress || 0}%"></div></div>
+                            <span class="text-xs text-blue-400 font-bold">${tracking.progress || 0}%</span>
+                        </div>` : ''}
+                </div>
+            </div>`;
     }
 
-    renderOrdersTable(orders) {
+    _tableView(orders) {
         return `
             <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-700 border-b border-gray-600">
+                <table class="w-full text-sm">
+                    <thead class="bg-[var(--bg-secondary)] border-b border-[var(--border-primary)]">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Item</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Price</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Seller</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tracking</th>
-                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">${this.app.t('table.item')}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">${this.app.t('table.price')}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">${this.app.t('table.status')}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">${this.app.t('table.seller')}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">${this.app.t('table.tracking')}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase">${this.app.t('table.actions')}</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-700">
-                        ${orders.map(order => this.renderTableRow(order)).join('')}
+                    <tbody class="divide-y divide-[var(--border-primary)]">
+                        ${orders.map(o => this._tableRow(o)).join('')}
                     </tbody>
                 </table>
+            </div>`;
+    }
+
+    _tableRow(order) {
+        const images = this.app.safeJsonParse(order.local_images, []);
+        const tracking = this.app.safeJsonParse(order.tracking_details, null);
+        const na = this.app.t('orders.na');
+        return `
+            <tr class="hover:bg-[var(--bg-card)] transition-colors cursor-pointer" data-order-id="${order.id}" onclick="app.openOrderDetail(${order.id})">
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 relative">
+                            ${order.color ? `<div class="absolute -top-0.5 -left-0.5 color-dot" style="background:${order.color};width:8px;height:8px;"></div>` : ''}
+                            ${images.length ? `<img src="/images/${images[0]}" class="w-full h-full object-cover">` : `<div class="w-full h-full bg-[var(--bg-secondary)] flex items-center justify-center"><i class="fas fa-image text-[var(--text-muted)] text-xs"></i></div>`}
+                        </div>
+                        <div class="min-w-0"><div class="font-medium truncate max-w-[200px]">${order.title}</div><div class="text-xs text-[var(--text-muted)]">${order.category || na}</div></div>
+                    </div>
+                </td>
+                <td class="px-4 py-3 font-bold text-blue-400">€${order.price.toFixed(2)}</td>
+                <td class="px-4 py-3"><span class="badge ${this.app.getStatusClass(order.status)}"><i class="fas ${this.app.getStatusIcon(order.status)}"></i> ${this.app.t('status.' + order.status.toLowerCase())}</span></td>
+                <td class="px-4 py-3"><div class="text-sm">${order.seller_name || na}</div>${order.seller_is_new ? `<span class="badge badge-new-seller" style="font-size:0.6rem;">${this.app.t('orders.new')}</span>` : ''}</td>
+                <td class="px-4 py-3">${tracking && !tracking.error ? `<div class="text-xs text-blue-400">${tracking.carrier}</div><div class="progress-bar mt-1" style="height:3px;width:80px;"><div class="progress-bar-fill" style="width:${tracking.progress || 0}%"></div></div>` : '<span class="text-[var(--text-muted)] text-xs">—</span>'}</td>
+                <td class="px-4 py-3" onclick="event.stopPropagation()">
+                    <div class="flex gap-1">
+                        <button onclick="app.openOrderDetail(${order.id})" class="btn btn-ghost btn-icon btn-sm"><i class="fas fa-pen-to-square"></i></button>
+                        <a href="${order.article_url}" target="_blank" class="btn btn-ghost btn-icon btn-sm"><i class="fas fa-external-link-alt"></i></a>
+                    </div>
+                </td>
+            </tr>`;
+    }
+
+    // ---- Order Detail Panel ----
+
+    async openOrderDetail(id) {
+        try {
+            const order = await this.app.apiRequest(`/orders/${id}`);
+            this._currentDetailOrder = order;
+            this._renderOrderDetail(order);
+
+            document.getElementById('orderDetailTitle').textContent = order.title;
+            const link = document.getElementById('orderDetailLink');
+            link.href = order.article_url || '#';
+            link.title = this.app.t('detail.openListing');
+
+            document.getElementById('orderDetailPanel').classList.add('open');
+            document.getElementById('orderDetailBackdrop').classList.add('active');
+        } catch {
+            this.app.showToast(this.app.t('error.loadOrder'), 'error');
+        }
+    }
+
+    closeOrderDetail() {
+        document.getElementById('orderDetailPanel').classList.remove('open');
+        document.getElementById('orderDetailBackdrop').classList.remove('active');
+        this._currentDetailOrder = null;
+    }
+
+    _renderOrderDetail(order) {
+        const body = document.getElementById('orderDetailBody');
+        const images = this.app.safeJsonParse(order.local_images, []);
+        const tracking = this.app.safeJsonParse(order.tracking_details, null);
+        const colors = this.app.settings.colors || [];
+        const na = this.app.t('orders.na');
+
+        // Color swatches
+        const colorSwatches = colors.map(c => `
+            <div class="detail-color-swatch ${order.color === c.value ? 'selected' : ''}"
+                 style="background:${c.value}"
+                 onclick="app._selectDetailColor('${c.value}', this)"
+                 title="${c.name}"></div>
+        `).join('') + `
+            <div class="detail-color-swatch ${!order.color ? 'selected' : ''}"
+                 style="background:var(--bg-card); border:1px dashed var(--border-hover);"
+                 onclick="app._selectDetailColor('', this)"
+                 title="${this.app.t('color.removeColor')}">
+                <i class="fas fa-times text-[var(--text-muted)]" style="font-size:0.6rem;"></i>
+            </div>`;
+
+        // Status buttons
+        const statuses = ['Ordered', 'Shipped', 'Delivered'];
+        const statusButtons = statuses.map(s => {
+            const active = order.status === s ? `active-${s.toLowerCase()}` : '';
+            return `<button class="status-toggle-btn ${active}"
+                            onclick="app._setDetailStatus('${s}', this)">
+                        <i class="fas ${this.app.getStatusIcon(s)} mr-1"></i>
+                        ${this.app.t('status.' + s.toLowerCase())}
+                    </button>`;
+        }).join('');
+
+        // Tracking section
+        let trackingHtml;
+        if (order.tracking_number) {
+            const isValid = tracking && !tracking.error;
+            trackingHtml = `
+                <div class="detail-tracking-block">
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="text-xs text-[var(--text-muted)] block mb-1">${this.app.t('detail.trackingCarrier')}</label>
+                            <select id="detail_carrier" class="input" style="font-size:0.8125rem;">
+                                <option value="dhl" ${order.carrier === 'dhl' ? 'selected' : ''}>DHL</option>
+                                <option value="hermes" ${order.carrier === 'hermes' ? 'selected' : ''}>Hermes</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-[var(--text-muted)] block mb-1">${this.app.t('detail.trackingNumber')}</label>
+                            <input type="text" id="detail_tracking_number" value="${order.tracking_number || ''}" class="input" style="font-size:0.8125rem;">
+                        </div>
+                    </div>
+                    ${isValid ? `
+                        <div class="mb-3">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-blue-400"><i class="fas fa-truck mr-1"></i>${tracking.carrier}</span>
+                                <span class="text-blue-400 font-bold">${tracking.progress || 0}%</span>
+                            </div>
+                            <div class="progress-bar" style="height:5px;">
+                                <div class="progress-bar-fill" style="width:${tracking.progress || 0}%"></div>
+                            </div>
+                            ${tracking.status ? `<div class="text-xs text-[var(--text-secondary)] mt-1">${tracking.status}</div>` : ''}
+                        </div>` : ''}
+                    <div class="flex gap-2">
+                        <button onclick="app.updateTracking(${order.id})" class="btn btn-ghost btn-sm flex-1">
+                            <i class="fas fa-sync"></i> ${this.app.t('detail.updateTracking')}
+                        </button>
+                        <button onclick="app.removeTrackingFromDetail(${order.id})" class="btn btn-ghost btn-sm" style="color:var(--accent-red);">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>`;
+        } else {
+            trackingHtml = `
+                <div class="text-xs text-[var(--text-muted)] mb-2">${this.app.t('detail.noTracking')}</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-[var(--text-muted)] block mb-1">${this.app.t('detail.trackingCarrier')}</label>
+                        <select id="detail_carrier" class="input" style="font-size:0.8125rem;">
+                            <option value="">${this.app.t('tracking.selectCarrier')}</option>
+                            <option value="dhl">DHL</option>
+                            <option value="hermes">Hermes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-[var(--text-muted)] block mb-1">${this.app.t('detail.trackingNumber')}</label>
+                        <input type="text" id="detail_tracking_number" placeholder="${this.app.t('tracking.enterNumber')}" class="input" style="font-size:0.8125rem;">
+                    </div>
+                </div>`;
+        }
+
+        body.innerHTML = `
+            ${images.length ? `
+                <div class="detail-section-label">${this.app.t('detail.images')}</div>
+                <div class="detail-image-gallery">
+                    ${images.map(img => `<img src="/images/${img}" onclick="window.open('/images/${img}','_blank')" title="${order.title}">`).join('')}
+                </div>` : ''}
+
+            <div class="detail-section-label">${this.app.t('edit.statusField')}</div>
+            <div class="status-toggle-group" id="detail_status_group" data-status="${order.status}">
+                ${statusButtons}
+            </div>
+
+            <div class="detail-section-label">${this.app.t('detail.editable')}</div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-[var(--text-muted)] block mb-1">${this.app.t('edit.titleField')}</label>
+                    <input type="text" id="detail_title" value="${(order.title || '').replace(/"/g, '&quot;')}" class="input">
+                </div>
+                <div>
+                    <label class="text-xs text-[var(--text-muted)] block mb-1">${this.app.t('edit.priceField')}</label>
+                    <input type="number" id="detail_price" step="0.01" min="0" value="${order.price || ''}" class="input">
+                </div>
+                <div>
+                    <label class="text-xs text-[var(--text-muted)] block mb-1">${this.app.t('edit.colorField')}</label>
+                    <div class="detail-color-swatches">${colorSwatches}</div>
+                    <input type="hidden" id="detail_color" value="${order.color || ''}">
+                </div>
+                <div>
+                    <label class="text-xs text-[var(--text-muted)] block mb-1">${this.app.t('edit.notesField')}</label>
+                    <textarea id="detail_notes" rows="3" class="input" style="resize:vertical;">${order.notes || ''}</textarea>
+                </div>
+            </div>
+
+            <div class="detail-section-label">${this.app.t('detail.tracking')}</div>
+            ${trackingHtml}
+
+            <div class="detail-section-label">${this.app.t('detail.seller')}</div>
+            <div class="card p-3 space-y-1.5 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-[var(--text-muted)]">${this.app.t('detail.sellerName')}</span>
+                    <span class="font-medium">
+                        ${order.seller_profile_url
+                            ? `<a href="${order.seller_profile_url}" target="_blank" class="text-blue-400 hover:underline">${order.seller_name || na}</a>`
+                            : (order.seller_name || na)}
+                        ${order.seller_is_new ? `<span class="badge badge-new-seller ml-1" style="font-size:0.6rem;">${this.app.t('orders.new')}</span>` : ''}
+                    </span>
+                </div>
+                ${order.seller_since ? `
+                <div class="flex justify-between">
+                    <span class="text-[var(--text-muted)]">${this.app.t('detail.sellerSince')}</span>
+                    <span>${order.seller_since}</span>
+                </div>` : ''}
+                ${order.category ? `
+                <div class="flex justify-between">
+                    <span class="text-[var(--text-muted)]">${this.app.t('detail.category')}</span>
+                    <span class="truncate ml-2 text-right max-w-[60%]">${order.category}</span>
+                </div>` : ''}
+                ${order.location ? `
+                <div class="flex justify-between">
+                    <span class="text-[var(--text-muted)]">${this.app.t('detail.location')}</span>
+                    <span class="text-right">${order.location}</span>
+                </div>` : ''}
             </div>
         `;
     }
 
-    renderTableRow(order) {
-        const images = order.local_images ? JSON.parse(order.local_images) : [];
-        const trackingData = order.tracking_details ? JSON.parse(order.tracking_details) : null;
-
-        return `
-            <tr class="hover:bg-gray-700 transition-colors" data-order-id="${order.id}">
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 h-12 w-12 relative">
-                            ${order.color ? `
-                                <div class="absolute -top-1 -left-1 w-3 h-3 rounded-full border-2 border-white shadow-lg z-10" style="background-color: ${order.color}"></div>
-                            ` : ''}
-                            ${images.length > 0
-                                ? `<img src="/images/${images[0]}" class="h-12 w-12 rounded-lg object-cover cursor-pointer" onclick="window.open('/images/${images[0]}', '_blank')">`
-                                : `<div class="h-12 w-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                                     <i class="fas fa-image text-gray-500"></i>
-                                   </div>`
-                            }
-                        </div>
-                        <div class="ml-4">
-                            <div class="text-sm font-medium text-white max-w-xs truncate">${order.title}</div>
-                            <div class="text-sm text-gray-400">${order.category || 'N/A'}</div>
-                        </div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-lg font-bold text-blue-400">€${order.price.toFixed(2)}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${this.getStatusClass(order.status)}">
-                        ${this.getStatusIcon(order.status)} ${this.t(`status.${order.status.toLowerCase()}`)}
-                    </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-300">${order.seller_name || 'N/A'}</div>
-                    <div class="text-sm text-gray-400">${order.location || 'N/A'}</div>
-                    ${order.seller_is_new ? '<div class="text-xs text-red-400">⚠️ New Seller</div>' : ''}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    ${order.tracking_number && trackingData && !trackingData.error ? `
-                        <div class="text-sm">
-                            <div class="text-blue-300 font-medium">${trackingData.carrier}</div>
-                            <div class="text-gray-400 text-xs">${order.tracking_number}</div>
-                            <div class="w-24 bg-gray-700 rounded-full h-1 mt-1">
-                                <div class="bg-blue-500 h-1 rounded-full" style="width: ${trackingData.progress || 0}%"></div>
-                            </div>
-                        </div>
-                    ` : '<span class="text-gray-500 text-sm">No tracking</span>'}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div class="flex space-x-2">
-                        <button onclick="app.editOrder(${order.id})" class="text-gray-400 hover:text-white" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="app.showColorPicker(${order.id})" class="text-purple-400 hover:text-purple-300" title="Color">
-                            <i class="fas fa-palette"></i>
-                        </button>
-                        ${!order.tracking_number ? `
-                            <button onclick="app.showTrackingModal(${order.id})" class="text-green-400 hover:text-green-300" title="Add Tracking">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        ` : `
-                            <button onclick="app.updateTracking(${order.id})" class="text-yellow-400 hover:text-yellow-300" title="Update">
-                                <i class="fas fa-sync"></i>
-                            </button>
-                        `}
-                        <a href="${order.article_url}" target="_blank" class="text-gray-400 hover:text-white" title="View">
-                            <i class="fas fa-external-link-alt"></i>
-                        </a>
-                        <button onclick="app.deleteOrder(${order.id})" class="text-red-400 hover:text-red-300" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
+    _selectDetailColor(color, el) {
+        document.querySelectorAll('#orderDetailBody .detail-color-swatch')
+            .forEach(s => s.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+        const input = document.getElementById('detail_color');
+        if (input) input.value = color;
     }
 
-    getStatusIcon(status) {
-        const icons = {
-            'Ordered': '📦',
-            'Shipped': '🚚',
-            'Delivered': '✅'
+    _setDetailStatus(status, btn) {
+        const group = document.getElementById('detail_status_group');
+        if (!group) return;
+        group.querySelectorAll('.status-toggle-btn').forEach(b => {
+            b.classList.remove('active-ordered', 'active-shipped', 'active-delivered');
+        });
+        btn.classList.add(`active-${status.toLowerCase()}`);
+        group.dataset.status = status;
+    }
+
+    async saveOrderDetail() {
+        if (!this._currentDetailOrder) return;
+        const id = this._currentDetailOrder.id;
+
+        const statusGroup = document.getElementById('detail_status_group');
+        const data = {
+            title: document.getElementById('detail_title').value,
+            price: parseFloat(document.getElementById('detail_price').value) || 0,
+            status: statusGroup ? statusGroup.dataset.status : this._currentDetailOrder.status,
+            color: document.getElementById('detail_color').value,
+            notes: document.getElementById('detail_notes').value,
         };
-        return icons[status] || '📦';
+
+        const carrier = document.getElementById('detail_carrier')?.value;
+        const trackingNumber = document.getElementById('detail_tracking_number')?.value;
+        if (carrier && trackingNumber) {
+            data.carrier = carrier;
+            data.tracking_number = trackingNumber;
+        }
+
+        this.app.showLoading(this.app.t('loading.saving'));
+        try {
+            const updated = await this.app.apiRequest(`/orders/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+            this.app.hideLoading();
+            this._currentDetailOrder = updated;
+            this._renderOrderDetail(updated);
+            document.getElementById('orderDetailTitle').textContent = updated.title;
+            this.app.showToast(this.app.t('toast.orderUpdated'), 'success');
+            this.loadOrders();
+        } catch {
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('error.saveFailed'), 'error');
+        }
     }
 
-    // Add Order functionality
+    removeTrackingFromDetail(id) {
+        this.app.showConfirm(
+            this.app.t('confirm.removeTracking'),
+            this.app.t('confirm.removeTrackingMsg'),
+            async () => {
+                try {
+                    const updated = await this.app.apiRequest(`/orders/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ tracking_number: '', carrier: '' })
+                    });
+                    this._currentDetailOrder = updated;
+                    this._renderOrderDetail(updated);
+                    this.app.showToast(this.app.t('toast.trackingRemoved'), 'success');
+                    this.loadOrders();
+                } catch {
+                    this.app.showToast(this.app.t('error.updateFailed'), 'error');
+                }
+            },
+            this.app.t('actions.remove')
+        );
+    }
+
+    deleteOrderFromDetail() {
+        if (!this._currentDetailOrder) return;
+        const id = this._currentDetailOrder.id;
+        this.app.showConfirm(
+            this.app.t('confirm.deleteOrder'),
+            this.app.t('confirm.deleteOrderMsg'),
+            async () => {
+                try {
+                    await this.app.apiRequest(`/orders/${id}`, { method: 'DELETE' });
+                    this.closeOrderDetail();
+                    this.app.showToast(this.app.t('toast.orderDeleted'), 'success');
+                    this.loadOrders();
+                } catch {
+                    this.app.showToast(this.app.t('error.deleteFailed'), 'error');
+                }
+            }
+        );
+    }
+
+    // ---- Legacy methods (kept for dashboard/tracking page compatibility) ----
+
+    async editOrder(id) {
+        this.openOrderDetail(id);
+    }
+
+    closeEdit() { this.app.closeModal('editModal'); }
+
+    showColorPicker(orderId) {
+        this.openOrderDetail(orderId);
+    }
+
+    selectColor(color, el) {
+        document.querySelectorAll('#color-picker .color-swatch').forEach(s => s.classList.remove('selected'));
+        if (el) el.classList.add('selected');
+        this.app.selectedColor = color;
+    }
+
+    async applyColor() {
+        if (this.app.selectedOrderForColor && this.app.selectedColor !== undefined) {
+            try {
+                await this.app.apiRequest(`/orders/${this.app.selectedOrderForColor}`, {
+                    method: 'PUT', body: JSON.stringify({ color: this.app.selectedColor })
+                });
+                this.app.closeModal('colorModal');
+                this.app.showToast(this.app.t('toast.colorApplied'), 'success');
+                this.loadOrders();
+            } catch {
+                this.app.showToast(this.app.t('error.colorFailed'), 'error');
+            }
+        }
+    }
+
+    closeColorModal() {
+        this.app.closeModal('colorModal');
+        this.app.selectedOrderForColor = null;
+        this.app.selectedColor = undefined;
+    }
+
+    deleteOrder(id) {
+        this.app.showConfirm(this.app.t('confirm.deleteOrder'), this.app.t('confirm.deleteOrderMsg'), async () => {
+            try {
+                await this.app.apiRequest(`/orders/${id}`, { method: 'DELETE' });
+                this.app.showToast(this.app.t('toast.orderDeleted'), 'success');
+                this.loadOrders();
+            } catch {
+                this.app.showToast(this.app.t('error.deleteFailed'), 'error');
+            }
+        });
+    }
+
+    // ---- Add Order ----
+
     async addOrder(event) {
         event.preventDefault();
         const url = document.getElementById('orderUrl').value;
-
-        this.showLoading('Adding order...');
-
+        this.app.showLoading(this.app.t('loading.addingOrder'));
         try {
-            const order = await this.apiRequest('/orders', {
-                method: 'POST',
-                body: JSON.stringify({ url })
-            });
-
-            this.hideLoading();
-
+            const order = await this.app.apiRequest('/orders', { method: 'POST', body: JSON.stringify({ url }) });
+            this.app.hideLoading();
             if (order.seller_is_new) {
-                this.showToast(`⚠️ ${this.t('seller.new')}: ${order.seller_name} (${this.t('seller.since')} ${order.seller_since})`, 'warning');
+                this.app.showToast(this.app.t('seller.newSellerAlert', { name: order.seller_name, since: order.seller_since }), 'warning');
             } else {
-                this.showToast('Order added successfully', 'success');
+                this.app.showToast(this.app.t('toast.orderAdded'), 'success');
             }
-
             this.hideAddOrderForm();
             this.loadOrders();
         } catch (error) {
-            this.hideLoading();
-            this.showToast(error.message, 'error');
+            this.app.hideLoading();
+            this.app.showToast(error.message, 'error');
         }
     }
 
-    // Toggle view modes
-    toggleView() {
-        const modes = ['grid', 'list', 'table'];
-        const currentIndex = modes.indexOf(this.viewMode);
-        this.viewMode = modes[(currentIndex + 1) % modes.length];
-        localStorage.setItem('viewMode', this.viewMode);
-        this.updateViewIcon();
-        this.loadOrders();
-    }
-
-    updateViewIcon() {
-        const icon = document.getElementById('viewToggleIcon');
-        if (icon) {
-            const icons = {
-                'grid': 'fas fa-th',
-                'list': 'fas fa-list',
-                'table': 'fas fa-table'
-            };
-            icon.className = icons[this.viewMode] || 'fas fa-th';
-        }
-    }
-
-    // Clear all filters
     clearAllFilters() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('statusFilter').value = '';
-        document.getElementById('colorFilter').value = '';
-        document.getElementById('sellerFilter').value = '';
-        document.getElementById('priceMinFilter').value = '';
-        document.getElementById('priceMaxFilter').value = '';
+        ['searchInput', 'statusFilter', 'colorFilter', 'sellerFilter', 'priceMinFilter', 'priceMaxFilter'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
         this.loadOrders();
-    }
-
-    // Edit Order
-    async editOrder(id) {
-        try {
-            const order = await this.apiRequest(`/orders/${id}`);
-
-            document.getElementById('edit_id').value = order.id;
-            document.getElementById('edit_title').value = order.title || '';
-            document.getElementById('edit_price').value = order.price || '';
-            document.getElementById('edit_status').value = order.status || 'Ordered';
-            document.getElementById('edit_color').value = order.color || '';
-            document.getElementById('edit_notes').value = order.notes || '';
-
-            document.getElementById('editModal').classList.remove('hidden');
-            document.getElementById('editModal').classList.add('flex');
-        } catch (error) {
-            this.showToast('Failed to load order', 'error');
-        }
     }
 
     async saveEdit(event) {
         event.preventDefault();
-
         const id = document.getElementById('edit_id').value;
         const data = {
             title: document.getElementById('edit_title').value,
@@ -553,107 +601,17 @@ class OrdersManager extends KleinManagerCore {
             color: document.getElementById('edit_color').value,
             notes: document.getElementById('edit_notes').value
         };
-
-        this.showLoading('Saving changes...');
-
+        this.app.showLoading(this.app.t('loading.saving'));
         try {
-            await this.apiRequest(`/orders/${id}`, {
-                method: 'PUT',
-                body: JSON.stringify(data)
-            });
-
-            this.hideLoading();
+            await this.app.apiRequest(`/orders/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+            this.app.hideLoading();
             this.closeEdit();
-            this.showToast('Order updated successfully', 'success');
-
-            if (this.currentSection === 'dashboard') this.loadDashboard();
-            else if (this.currentSection === 'orders') this.loadOrders();
-        } catch (error) {
-            this.hideLoading();
-            this.showToast('Failed to save changes', 'error');
-        }
-    }
-
-    closeEdit() {
-        document.getElementById('editModal').classList.add('hidden');
-        document.getElementById('editModal').classList.remove('flex');
-    }
-
-    // Color Management
-    showColorPicker(orderId) {
-        this.selectedOrderForColor = orderId;
-        const modal = document.getElementById('colorModal');
-        const picker = document.getElementById('color-picker');
-
-        if (!modal || !picker || !this.settings.colors) return;
-
-        picker.innerHTML = this.settings.colors.map(color => `
-            <button class="w-12 h-12 rounded-full border-2 border-gray-600 hover:border-white transition-colors shadow-lg hover:shadow-xl hover:scale-110 transform duration-200"
-                    style="background-color: ${color.value}"
-                    onclick="app.selectColor('${color.value}')"
-                    data-color="${color.value}"
-                    title="${color.name}">
-            </button>
-        `).join('');
-
-        picker.innerHTML += `
-            <button class="w-12 h-12 rounded-full border-2 border-gray-600 hover:border-white transition-colors bg-gray-700 flex items-center justify-center hover:scale-110 transform duration-200"
-                    onclick="app.selectColor('')"
-                    data-color=""
-                    title="Remove Color">
-                <i class="fas fa-times text-white"></i>
-            </button>
-        `;
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-
-    selectColor(color) {
-        document.querySelectorAll('#color-picker button').forEach(btn => {
-            btn.classList.remove('ring-4', 'ring-white', 'ring-offset-2', 'ring-offset-gray-800');
-        });
-
-        event.target.classList.add('ring-4', 'ring-white', 'ring-offset-2', 'ring-offset-gray-800');
-        this.selectedColor = color;
-    }
-
-    async applyColor() {
-        if (this.selectedOrderForColor && this.selectedColor !== undefined) {
-            try {
-                await this.apiRequest(`/orders/${this.selectedOrderForColor}`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ color: this.selectedColor })
-                });
-
-                this.closeColorModal();
-                this.showToast('Color applied successfully', 'success');
-                this.loadOrders();
-            } catch (error) {
-                this.showToast('Failed to apply color', 'error');
-            }
-        }
-    }
-
-    closeColorModal() {
-        const modal = document.getElementById('colorModal');
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-        this.selectedOrderForColor = null;
-        this.selectedColor = undefined;
-    }
-
-    async deleteOrder(id) {
-        if (!confirm('Really delete this order?')) return;
-
-        try {
-            await this.apiRequest(`/orders/${id}`, { method: 'DELETE' });
-            this.showToast('Order deleted successfully', 'success');
-            this.loadOrders();
-        } catch (error) {
-            this.showToast('Failed to delete order', 'error');
+            this.app.showToast(this.app.t('toast.orderUpdated'), 'success');
+            if (this.app.currentSection === 'dashboard') this.app.loadDashboard();
+            else this.loadOrders();
+        } catch {
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('error.saveFailed'), 'error');
         }
     }
 }

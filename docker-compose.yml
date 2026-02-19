@@ -1,0 +1,15 @@
+services:
+  kleinmanager:
+    build: .
+    container_name: kleinmanager
+    ports:
+      - "8000:8000"
+    volumes:
+      - km-data:/data
+    environment:
+      - DATABASE_URL=sqlite:////data/kleinmanager.db
+      - IMAGE_STORAGE_PATH=/data/images
+    restart: unless-stopped
+
+volumes:
+  km-data:

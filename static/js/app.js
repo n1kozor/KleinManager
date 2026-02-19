@@ -1,95 +1,97 @@
-// Main Application Class - combines all functionality
+// Main Application - Combines all manager functionality
 class KleinManager extends KleinManagerCore {
     constructor() {
         super();
 
-        // Initialize all managers as properties
-        this.dashboardManager = new DashboardManager();
-        this.ordersManager = new OrdersManager();
-        this.watcherManager = new WatcherManager();
-        this.trackingManager = new TrackingManager();
-        this.listingsManager = new ListingsManager();
-        this.statisticsManager = new StatisticsManager();
-        this.settingsManager = new SettingsManager();
-        this.notificationsManager = new NotificationsManager();
+        // Initialize managers - they receive `this` as app reference
+        this._dashboard = new DashboardManager(this);
+        this._orders = new OrdersManager(this);
+        this._watcher = new WatcherManager(this);
+        this._tracking = new TrackingManager(this);
+        this._listings = new ListingsManager(this);
+        this._statistics = new StatisticsManager(this);
+        this._settings = new SettingsManager(this);
+        this._notifications = new NotificationsManager(this);
 
-        // Copy all methods from managers to this instance
-        this.copyMethodsFromManager(this.dashboardManager);
-        this.copyMethodsFromManager(this.ordersManager);
-        this.copyMethodsFromManager(this.watcherManager);
-        this.copyMethodsFromManager(this.trackingManager);
-        this.copyMethodsFromManager(this.listingsManager);
-        this.copyMethodsFromManager(this.statisticsManager);
-        this.copyMethodsFromManager(this.settingsManager);
-        this.copyMethodsFromManager(this.notificationsManager);
+        // Delegate manager methods to app
+        this._delegateAll(this._dashboard);
+        this._delegateAll(this._orders);
+        this._delegateAll(this._watcher);
+        this._delegateAll(this._tracking);
+        this._delegateAll(this._listings);
+        this._delegateAll(this._statistics);
+        this._delegateAll(this._settings);
+        this._delegateAll(this._notifications);
 
         this.init();
     }
 
-    copyMethodsFromManager(manager) {
-        // Get all method names from the manager's prototype
-        const methodNames = Object.getOwnPropertyNames(Object.getPrototypeOf(manager))
-            .filter(name => name !== 'constructor' && typeof manager[name] === 'function');
-
-        // Copy each method to this instance
-        methodNames.forEach(methodName => {
-            if (!this[methodName]) { // Don't override existing methods
-                this[methodName] = manager[methodName].bind(this);
-            }
-        });
-
-        // Also copy properties
-        Object.keys(manager).forEach(key => {
-            if (!this.hasOwnProperty(key)) {
-                this[key] = manager[key];
-            }
+    _delegateAll(manager) {
+        const proto = Object.getPrototypeOf(manager);
+        Object.getOwnPropertyNames(proto).forEach(name => {
+            if (name === 'constructor' || typeof proto[name] !== 'function') return;
+            if (this[name]) return; // don't override
+            this[name] = (...args) => manager[name](...args);
         });
     }
 
     async init() {
+        // Set language label from stored preference
+        const langEl = document.getElementById('currentLang');
+        if (langEl) langEl.textContent = this.currentLang.toUpperCase();
         this.updateTranslations();
         this.updateViewIcon();
         await this.loadSettings();
-        this.initNotificationSound();
+        this._notifications.initNotificationSound();
         this.loadDashboard();
-        this.startNotificationPolling();
+        this._notifications.startNotificationPolling();
 
         window.addEventListener('resize', () => {
-            if (window.innerWidth >= 1024) {
-                this.closeMobileMenu();
-            }
+            if (window.innerWidth >= 1024) this.closeMobileMenu();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') this.closeOrderDetail();
         });
     }
 
-    // Override showSection to handle mixed functionality
     showSection(section) {
-        document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-        document.getElementById(section).classList.remove('hidden');
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById(section);
+        if (target) target.classList.add('active');
 
-        document.querySelectorAll('.nav-item').forEach(n => {
-            n.classList.remove('active', 'bg-blue-900/50', 'border-l-4', 'border-blue-500');
-        });
+        // Update nav
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const navItem = document.querySelector(`.nav-item[data-section="${section}"]`);
+        if (navItem) navItem.classList.add('active');
 
-        // Find the clicked nav item
-        const clickedItem = event?.target?.closest?.('.nav-item') ||
-                           document.querySelector(`.nav-item[onclick*="${section}"]`);
-        if (clickedItem) {
-            clickedItem.classList.add('active', 'bg-blue-900/50', 'border-l-4', 'border-blue-500');
-        }
+        // Update page title
+        const titleKey = section === 'dashboard' ? 'nav.dashboard' :
+                         section === 'orders' ? 'nav.orders' :
+                         section === 'watcher' ? 'nav.watcher' :
+                         section === 'tracking' ? 'nav.tracking' :
+                         section === 'listings' ? 'nav.listings' :
+                         section === 'statistics' ? 'nav.statistics' :
+                         section === 'settings' ? 'nav.settings' : 'nav.dashboard';
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.textContent = this.t(titleKey);
 
         this.currentSection = section;
         this.closeMobileMenu();
 
         // Load section data
-        if (section === 'dashboard') this.loadDashboard();
-        else if (section === 'orders') this.loadOrders();
-        else if (section === 'watcher') this.loadWatchedItems();
-        else if (section === 'tracking') this.loadTracking();
-        else if (section === 'listings') this.loadMyListings();
-        else if (section === 'statistics') this.loadStatistics();
-        else if (section === 'settings') this.loadSettings();
+        switch (section) {
+            case 'dashboard': this.loadDashboard(); break;
+            case 'orders': this.loadOrders(); break;
+            case 'watcher': this.loadWatchedItems(); break;
+            case 'tracking': this.loadTracking(); break;
+            case 'listings': this.loadMyListings(); break;
+            case 'statistics': this.loadStatistics(); break;
+            case 'settings': this.loadSettings(); break;
+        }
     }
 }
 
-// Initialize application
+// Initialize
 const app = new KleinManager();

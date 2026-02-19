@@ -1,87 +1,70 @@
-// My Listings functionality
-class ListingsManager extends KleinManagerCore {
+// My Listings Manager
+class ListingsManager {
+    constructor(app) {
+        this.app = app;
+    }
+
     async loadMyListings() {
         try {
-            const listings = await this.apiRequest('/my-listings');
+            const listings = await this.app.apiRequest('/my-listings');
             const container = document.getElementById('my-listings-list');
 
-            if (listings.length === 0) {
+            if (!listings.length) {
                 container.innerHTML = `
-                    <div class="col-span-full text-center py-12">
-                        <i class="fas fa-list-alt text-gray-600 text-4xl mb-4"></i>
-                        <p class="text-gray-400">No listings found</p>
-                        <button onclick="app.syncMyListings()" class="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                            <i class="fas fa-sync mr-2"></i>Sync Listings
-                        </button>
-                    </div>
-                `;
+                    <div class="col-span-full empty-state card">
+                        <i class="fas fa-list-alt"></i>
+                        <h3>${this.app.t('listings.noListings')}</h3>
+                        <p>${this.app.t('listings.noListingsDesc')}</p>
+                        <button onclick="app.syncMyListings()" class="btn btn-success"><i class="fas fa-sync"></i> ${this.app.t('actions.sync')}</button>
+                    </div>`;
             } else {
-                container.innerHTML = listings.map(listing => this.renderMyListing(listing)).join('');
+                container.innerHTML = listings.map(l => this._renderCard(l)).join('');
             }
-        } catch (error) {
-            this.showToast('Failed to load my listings', 'error');
+        } catch {
+            this.app.showToast(this.app.t('error.loadListings'), 'error');
         }
     }
 
-    renderMyListing(listing) {
+    _renderCard(listing) {
         return `
-            <div class="bg-gray-800 rounded-xl shadow-sm border border-gray-700 hover:border-gray-600 transition-all overflow-hidden">
+            <div class="order-card">
                 <div class="relative">
                     ${listing.image_url
-                        ? `<img src="${listing.image_url}" class="w-full h-48 object-cover">`
-                        : `<div class="w-full h-48 bg-gray-700 flex items-center justify-center">
-                             <i class="fas fa-image text-gray-500 text-3xl"></i>
-                           </div>`
-                    }
-                    <span class="absolute top-2 right-2 px-2 py-1 bg-green-600 text-white rounded-lg text-xs font-medium">
-                        ${listing.status}
-                    </span>
-                </div>
-
-                <div class="p-4">
-                    <h3 class="text-lg font-semibold text-white mb-2 line-clamp-2">${listing.title}</h3>
-                    <p class="text-2xl font-bold text-green-400 mb-3">€${listing.price.toFixed(2)}</p>
-
-                    <div class="space-y-1 text-sm text-gray-400 mb-3">
-                        <div class="flex items-center">
-                            <i class="fas fa-tag mr-2 w-4"></i>
-                            <span class="truncate">${listing.category || 'N/A'}</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-calendar mr-2 w-4"></i>
-                            <span class="truncate">Ends: ${listing.end_date || 'N/A'}</span>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center text-xs text-gray-400 mb-3">
-                        <span><i class="fas fa-eye mr-1"></i>${listing.visitors} visitors</span>
-                        <span><i class="fas fa-heart mr-1"></i>${listing.favorites} favorites</span>
-                    </div>
-
-                    <div class="flex gap-2">
-                        ${listing.url ? `
-                            <a href="${listing.url}" target="_blank"
-                               class="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs text-center transition-colors">
-                                <i class="fas fa-external-link-alt mr-1"></i>View
-                            </a>
-                        ` : ''}
+                        ? `<img src="${listing.image_url}" class="order-card-image">`
+                        : `<div class="order-card-placeholder"><i class="fas fa-image"></i></div>`}
+                    <span class="absolute top-2 right-2 badge badge-delivered">${listing.status}</span>
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
+                        <span class="text-lg font-bold text-emerald-400">€${listing.price.toFixed(2)}</span>
                     </div>
                 </div>
-            </div>
-        `;
+                <div class="order-card-body">
+                    <div class="order-card-title">${listing.title}</div>
+                    <div class="space-y-1 mb-3">
+                        <div class="order-card-meta"><i class="fas fa-tag w-3"></i><span class="truncate">${listing.category || this.app.t('orders.na')}</span></div>
+                        <div class="order-card-meta"><i class="fas fa-calendar w-3"></i><span>${this.app.t('listings.ends', { date: listing.end_date || this.app.t('orders.na') })}</span></div>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-[var(--text-muted)] mb-3">
+                        <span><i class="fas fa-eye mr-1"></i>${this.app.t('listings.views', { count: listing.visitors })}</span>
+                        <span><i class="fas fa-heart mr-1"></i>${this.app.t('listings.favs', { count: listing.favorites })}</span>
+                    </div>
+                    ${listing.url ? `
+                        <a href="${listing.url}" target="_blank" class="btn btn-primary btn-sm w-full">
+                            <i class="fas fa-external-link-alt"></i> ${this.app.t('actions.viewListing2')}
+                        </a>` : ''}
+                </div>
+            </div>`;
     }
 
     async syncMyListings() {
-        this.showLoading('Syncing listings from Kleinanzeigen...');
-
+        this.app.showLoading(this.app.t('loading.syncingListings'));
         try {
-            const result = await this.apiRequest('/my-listings/sync', { method: 'POST' });
-            this.hideLoading();
-            this.showToast(`Synced ${result.synced} listings`, 'success');
+            const result = await this.app.apiRequest('/my-listings/sync', { method: 'POST' });
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('toast.syncedListings', { count: result.synced }), 'success');
             this.loadMyListings();
-        } catch (error) {
-            this.hideLoading();
-            this.showToast('Failed to sync listings', 'error');
+        } catch {
+            this.app.hideLoading();
+            this.app.showToast(this.app.t('error.syncFailed'), 'error');
         }
     }
 }
