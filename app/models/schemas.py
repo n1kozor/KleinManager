@@ -104,10 +104,12 @@ class SettingsUpdate(BaseModel):
 
 class StatsResponse(BaseModel):
     """Schema for statistics response"""
-    total: int
-    transit: int
-    value: str
+    total_orders: int
+    in_transit: int
+    total_value: str
     new_sellers: int
+    delivered: int
+    average_order_value: str
 
 class TrackingUpdate(BaseModel):
     """Schema for tracking update response"""
@@ -129,3 +131,19 @@ class BackgroundTaskStatus(BaseModel):
     tracking_monitoring_active: bool
     last_price_check: Optional[datetime]
     last_tracking_check: Optional[datetime]
+class DailyTrend(BaseModel):
+    date: str
+    orders: int
+    total_value: float
+
+class MonthlyTrend(BaseModel):
+    month: str
+    orders: int
+    total_value: float
+
+class TrendsResponse(BaseModel):
+    last_30_days: List[DailyTrend]
+    monthly: List[MonthlyTrend]
+
+class PriceAnalysisResponse(BaseModel):
+    price_ranges: Dict[str, int]

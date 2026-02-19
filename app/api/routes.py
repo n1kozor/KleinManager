@@ -1,4 +1,4 @@
-﻿from typing import List, Optional
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -13,7 +13,8 @@ from app.models.schemas import (
     OrderCreate, OrderUpdate, OrderResponse,
     WatchedItemCreate, WatchedItemUpdate, WatchedItemResponse,
     MyListingResponse, SettingsUpdate,
-    StatsResponse, TrackingUpdate, NotificationResponse
+    StatsResponse, TrackingUpdate, NotificationResponse,
+    TrendsResponse, PriceAnalysisResponse
 )
 from app.services.scraper import KleinanzeigenScraper
 from app.api.tracking_service import TrackingService
@@ -483,14 +484,21 @@ async def get_stats(db: Session = Depends(get_db)):
     """Get dashboard statistics"""
     total = db.query(Order).count()
     transit = db.query(Order).filter(Order.status == 'Shipped').count()
+    delivered = db.query(Order).filter(Order.status == 'Delivered').count()
     value = db.query(func.sum(Order.price)).scalar() or 0
     new_sellers = db.query(Order).filter(Order.seller_is_new == True).count()
 
+    avg_order = 0
+    if total > 0:
+        avg_order = value / total
+
     return {
-        "total": total,
-        "transit": transit,
-        "value": f"{value:.2f}",
-        "new_sellers": new_sellers
+        "total_orders": total,
+        "in_transit": transit,
+        "total_value": f"{value:.2f}",
+        "new_sellers": new_sellers,
+        "delivered": delivered,
+        "average_order_value": f"{avg_order:.2f}"
     }
 
 
@@ -508,7 +516,72 @@ async def get_detailed_stats(db: Session = Depends(get_db)):
         func.count(Order.id).label('count')
     ).group_by(Order.category).order_by(func.count(Order.id).desc()).limit(5).all()
 
+    top_sellers = db.query(
+        Order.seller_name.label('name'),
+        func.count(Order.id).label('order_count')
+    ).filter(Order.seller_name.isnot(None))\
+    .group_by(Order.seller_name)\
+    .order_by(func.count(Order.id).desc())\
+    .limit(5).all()
+
     return {
         "by_status": by_status,
-        "top_categories": [{"category": cat[0], "count": cat[1]} for cat in top_categories]
+        "top_categories": [{"category": cat[0], "count": cat[1]} for cat in top_categories],
+        "top_sellers": [{"name": s.name, "order_count": s.order_count} for s in top_sellers]
     }
+
+@router.get("/stats/trends", response_model=TrendsResponse)
+async def get_trends(db: Session = Depends(get_db)):
+    """Get order trends for charts"""
+    # Last 30 days
+    last_30_days = []
+    today = datetime.now()
+
+    for i in range(29, -1, -1):
+        date = today - timedelta(days=i)
+        date_str = date.strftime('%Y-%m-%d')
+        next_date = date + timedelta(days=1)
+
+        day_stats = db.query(
+            func.count(Order.id).label('orders'),
+            func.coalesce(func.sum(Order.price), 0).label('total_value')
+        ).filter(
+            Order.created_at >= date.replace(hour=0, minute=0, second=0, microsecond=0),
+            Order.created_at < next_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        ).first()
+
+        last_30_days.append({
+            "date": date_str,
+            "orders": day_stats.orders or 0,
+            "total_value": float(day_stats.total_value or 0)
+        })
+
+    # Monthly
+    monthly_query = db.query(
+        func.strftime('%Y-%m', Order.created_at).label('month'),
+        func.count(Order.id).label('orders'),
+        func.sum(Order.price).label('total_value')
+    ).group_by('month').order_by('month').limit(12).all()
+
+    monthly = [
+        {
+            "month": m.month,
+            "orders": m.orders,
+            "total_value": float(m.total_value or 0)
+        }
+        for m in monthly_query if m.month
+    ]
+
+    return {"last_30_days": last_30_days, "monthly": monthly}
+
+@router.get("/stats/price-analysis", response_model=PriceAnalysisResponse)
+async def get_price_analysis(db: Session = Depends(get_db)):
+    """Get price distribution analysis"""
+    ranges = {
+        "0-50": db.query(Order).filter(Order.price >= 0, Order.price < 50).count(),
+        "50-100": db.query(Order).filter(Order.price >= 50, Order.price < 100).count(),
+        "100-500": db.query(Order).filter(Order.price >= 100, Order.price < 500).count(),
+        "500+": db.query(Order).filter(Order.price >= 500).count(),
+    }
+
+    return {"price_ranges": ranges}
